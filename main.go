@@ -20,7 +20,7 @@ func main() {
 		panic(err)
 	}
 
-	pom := &maven.MavenPom{}
+	pom := &maven.Artifact{}
 	err = xml.Unmarshal(pomStr, pom)
 	if err != nil {
 		panic(err)

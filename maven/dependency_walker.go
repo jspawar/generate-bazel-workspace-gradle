@@ -22,9 +22,9 @@ type DependencyWalker struct {
 	cache        map[string]string
 }
 
-func (w *DependencyWalker) TraversePOM(pom *MavenPom) ([]MavenArtifact, error) {
+func (w *DependencyWalker) TraversePOM(pom *Artifact) ([]Artifact, error) {
 	repository := w.Repositories[0]
-	searchPath, err := pom.AsArtifact().SearchPath()
+	searchPath, err := pom.SearchPath()
 	if err != nil {
 		panic(err)
 	}
@@ -36,9 +36,8 @@ func (w *DependencyWalker) TraversePOM(pom *MavenPom) ([]MavenArtifact, error) {
 	}
 	defer res.Body.Close()
 
-	pomArtifact := *pom.AsArtifact()
-	pomArtifact.Repository = repository
-	deps := []MavenArtifact{pomArtifact}
+	pom.Repository = repository
+	deps := []Artifact{*pom}
 	w.cache = map[string]string{deps[0].AsString(): repository}
 
 	logger.Debug().Msg("Traversing dependencies...")
@@ -48,7 +47,7 @@ func (w *DependencyWalker) TraversePOM(pom *MavenPom) ([]MavenArtifact, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err,
 				"Failed to fetch dependency for POM [%s] from configured search repositories",
-				pomArtifact.AsString())
+				pom.AsString())
 		}
 		deps = append(deps, traversedDeps...)
 	}
@@ -56,7 +55,7 @@ func (w *DependencyWalker) TraversePOM(pom *MavenPom) ([]MavenArtifact, error) {
 	return deps, nil
 }
 
-func (w *DependencyWalker) traverseArtifact(artifact MavenArtifact) ([]MavenArtifact, error) {
+func (w *DependencyWalker) traverseArtifact(artifact Artifact) ([]Artifact, error) {
 	// check cache to avoid unnecessary traversal
 	if _, isCached := w.cache[artifact.AsString()]; isCached {
 		logger.Debug().Msgf("Artifact already discovered : %s", artifact.AsString())
@@ -99,7 +98,7 @@ func (w *DependencyWalker) traverseArtifact(artifact MavenArtifact) ([]MavenArti
 	// can safely add this artifact to result slice
 	w.cache[artifact.AsString()] = repository
 	artifact.Repository = repository
-	deps := []MavenArtifact{artifact}
+	deps := []Artifact{artifact}
 
 	logger.Debug().Msgf("Reading POM at : %s", repository+searchPath+pomPath)
 	res.Body.Close()
@@ -114,7 +113,7 @@ func (w *DependencyWalker) traverseArtifact(artifact MavenArtifact) ([]MavenArti
 		panic(err)
 	}
 
-	artifactPom := &MavenPom{}
+	artifactPom := &Artifact{}
 	reader := bytes.NewReader(bs)
 	decoder := xml.NewDecoder(reader)
 	decoder.CharsetReader = charset.NewReaderLabel

@@ -14,15 +14,16 @@ var _ = Describe("Models", func() {
 	var (
 		err       error
 		pomString string
-		pom       *MavenPom
+		pom       *Artifact
 	)
 
 	Context("Given a pom.xml file", func() {
 		JustBeforeEach(func() {
-			pom = &MavenPom{}
+			pom = &Artifact{}
 			err = xml.Unmarshal([]byte(pomString), pom)
 		})
 
+		// TODO: need to account for POM properties used to define dep versions
 		Context("that is valid", func() {
 			BeforeEach(func() {
 				pomString = `
@@ -93,12 +94,12 @@ var _ = Describe("Models", func() {
 			)
 
 			JustBeforeEach(func() {
-				searchPath, err = pom.AsArtifact().SearchPath()
+				searchPath, err = pom.SearchPath()
 			})
 
 			Context("with valid artifact definition", func() {
 				BeforeEach(func() {
-					pom = &MavenPom{
+					pom = &Artifact{
 						GroupID:    "some.fake.org",
 						ArtifactID: "some-fake-artifact",
 						Version:    "0.0.0",
@@ -113,7 +114,7 @@ var _ = Describe("Models", func() {
 
 			Context("with invalid artifact definition", func() {
 				BeforeEach(func() {
-					pom = &MavenPom{}
+					pom = &Artifact{}
 				})
 
 				It("should return a meaningful error", func() {

@@ -13,16 +13,16 @@ var _ = Describe("DependencyWalker", func() {
 		err          error
 		repositories []string
 		walker       *DependencyWalker
-		pom          *MavenPom
-		deps         []MavenArtifact
+		pom          *Artifact
+		deps         []Artifact
 	)
 
 	BeforeEach(func() {
-		pom = &MavenPom{
+		pom = &Artifact{
 			GroupID:    "junit",
 			ArtifactID: "junit",
 			Version:    "4.9",
-			Dependencies: []MavenArtifact{
+			Dependencies: []Artifact{
 				{
 					GroupID:    "org.hamcrest",
 					ArtifactID: "hamcrest-core",
@@ -65,7 +65,7 @@ var _ = Describe("DependencyWalker", func() {
 
 		Context("where all dependencies are NOT available in the one repository", func() {
 			var (
-				badArtifact = MavenArtifact{
+				badArtifact = Artifact{
 					GroupID:    "some.fake.org",
 					ArtifactID: "some-fake-artifact",
 					Version:    "0.0.0",
@@ -73,7 +73,7 @@ var _ = Describe("DependencyWalker", func() {
 			)
 
 			BeforeEach(func() {
-				pom.Dependencies = []MavenArtifact{badArtifact}
+				pom.Dependencies = []Artifact{badArtifact}
 			})
 
 			It("should return a meaningful error", func() {
@@ -84,7 +84,7 @@ var _ = Describe("DependencyWalker", func() {
 
 		Context("where a dependency is encountered twice", func() {
 			BeforeEach(func() {
-				pom.Dependencies = []MavenArtifact{
+				pom.Dependencies = []Artifact{
 					{GroupID: pom.GroupID, ArtifactID: pom.ArtifactID, Version: pom.Version},
 				}
 			})
