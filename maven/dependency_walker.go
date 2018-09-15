@@ -1,15 +1,12 @@
 package maven
 
 import (
-	"bytes"
-	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
 
 	"github.com/jspawar/generate-bazel-workspace-gradle/logging"
-	"golang.org/x/net/html/charset"
 	"github.com/pkg/errors"
 )
 
@@ -43,7 +40,7 @@ func (w *DependencyWalker) TraversePOM(pom *Artifact) ([]Artifact, error) {
 	logger.Debug().Msg("Traversing dependencies...")
 	for _, dep := range pom.Dependencies {
 		logger.Debug().Msgf("Traversing dependency : %s", dep.AsString())
-		traversedDeps, err := w.traverseArtifact(dep)
+		traversedDeps, err := w.traverseArtifact(*dep)
 		if err != nil {
 			return nil, errors.Wrapf(err,
 				"Failed to fetch dependency for POM [%s] from configured search repositories",
@@ -113,16 +110,13 @@ func (w *DependencyWalker) traverseArtifact(artifact Artifact) ([]Artifact, erro
 		panic(err)
 	}
 
-	artifactPom := &Artifact{}
-	reader := bytes.NewReader(bs)
-	decoder := xml.NewDecoder(reader)
-	decoder.CharsetReader = charset.NewReaderLabel
-	if err = decoder.Decode(artifactPom); err != nil {
+	artifactPom, err := UnmarshalPOM(bs)
+	if err != nil {
 		panic(err)
 	}
 
 	for _, dep := range artifactPom.Dependencies {
-		traversedDeps, err := w.traverseArtifact(dep)
+		traversedDeps, err := w.traverseArtifact(*dep)
 		if err != nil {
 			return nil, err
 		}
