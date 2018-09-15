@@ -93,7 +93,7 @@ var _ = Describe("Models", func() {
 			)
 
 			JustBeforeEach(func() {
-				searchPath, err = pom.SearchPath()
+				searchPath, err = pom.AsArtifact().SearchPath()
 			})
 
 			Context("with valid artifact definition", func() {
@@ -116,8 +116,8 @@ var _ = Describe("Models", func() {
 					pom = &MavenPom{}
 				})
 
-				It("should return a valid search path", func() {
-					Expect(err).To(MatchError("Invalid POM definition"))
+				It("should return a meaningful error", func() {
+					Expect(err).To(MatchError("invalid POM definition"))
 				})
 			})
 		})

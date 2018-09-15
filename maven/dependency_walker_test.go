@@ -19,14 +19,14 @@ var _ = Describe("DependencyWalker", func() {
 
 	BeforeEach(func() {
 		pom = &MavenPom{
-			GroupID:    "org.apache.commons",
-			ArtifactID: "commons-text",
-			Version:    "1.4",
+			GroupID:    "junit",
+			ArtifactID: "junit",
+			Version:    "4.9",
 			Dependencies: []MavenArtifact{
-				MavenArtifact{
-					GroupID:    "org.apache.commons",
-					ArtifactID: "commons-lang3",
-					Version:    "3.7",
+				{
+					GroupID:    "org.hamcrest",
+					ArtifactID: "hamcrest-core",
+					Version:    "1.1",
 				},
 			},
 		}
@@ -45,18 +45,18 @@ var _ = Describe("DependencyWalker", func() {
 		Context("where all dependencies are available in the one repository", func() {
 			It("should return all transitive dependencies without error", func() {
 				Expect(err).ToNot(HaveOccurred())
-				Expect(deps).ToNot(BeEmpty())
 
+				Expect(deps).ToNot(BeEmpty())
 				Expect(deps).To(ConsistOf(MatchFields(IgnoreExtras, Fields{
-					"GroupID":    Equal("org.apache.commons"),
-					"ArtifactID": Equal("commons-lang3"),
-					"Version":    Equal("3.7"),
+					"GroupID":    Equal("org.hamcrest"),
+					"ArtifactID": Equal("hamcrest-core"),
+					"Version":    Equal("1.1"),
 					"Scope":      BeEmpty(),
 					"Repository": Equal(repositories[0]),
 				}), MatchFields(IgnoreExtras, Fields{
-					"GroupID":    Equal("org.apache.commons"),
-					"ArtifactID": Equal("commons-text"),
-					"Version":    Equal("1.4"),
+					"GroupID":    Equal("junit"),
+					"ArtifactID": Equal("junit"),
+					"Version":    Equal("4.9"),
 					"Scope":      BeEmpty(),
 					"Repository": Equal(repositories[0]),
 				})))
@@ -73,12 +73,33 @@ var _ = Describe("DependencyWalker", func() {
 			)
 
 			BeforeEach(func() {
-				pom.Dependencies = append(pom.Dependencies, badArtifact)
+				pom.Dependencies = []MavenArtifact{badArtifact}
 			})
 
 			It("should return a meaningful error", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal("The following dependency/dependencies were not found in any of the search repositories : " + badArtifact.AsString()))
+				Expect(err.Error()).To(HavePrefix("Failed to fetch dependency for POM [junit:junit:4.9] from configured search repositories"))
+			})
+		})
+
+		Context("where a dependency is encountered twice", func() {
+			BeforeEach(func() {
+				pom.Dependencies = []MavenArtifact{
+					{GroupID: pom.GroupID, ArtifactID: pom.ArtifactID, Version: pom.Version},
+				}
+			})
+
+			It("should not duplicate in result", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(deps).ToNot(BeEmpty())
+				Expect(deps).To(ConsistOf(MatchFields(IgnoreExtras, Fields{
+					"GroupID":    Equal("junit"),
+					"ArtifactID": Equal("junit"),
+					"Version":    Equal("4.9"),
+					"Scope":      BeEmpty(),
+					"Repository": Equal(repositories[0]),
+				})))
 			})
 		})
 	})
