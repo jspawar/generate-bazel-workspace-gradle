@@ -51,7 +51,7 @@ var _ = Describe("DependencyWalker", func() {
 					"GroupID":    Equal("org.hamcrest"),
 					"ArtifactID": Equal("hamcrest-core"),
 					"Version":    Equal("1.1"),
-					"Scope":      BeEmpty(),
+					"Scope":      Equal("compile"),
 					"Repository": Equal(repositories[0]),
 				}), MatchFields(IgnoreExtras, Fields{
 					"GroupID":    Equal("junit"),
@@ -64,21 +64,18 @@ var _ = Describe("DependencyWalker", func() {
 		})
 
 		Context("where all dependencies are NOT available in the one repository", func() {
-			var (
-				badArtifact = &Artifact{
+			BeforeEach(func() {
+				pom = &Artifact{
 					GroupID:    "some.fake.org",
 					ArtifactID: "some-fake-artifact",
 					Version:    "0.0.0",
 				}
-			)
-
-			BeforeEach(func() {
-				pom.Dependencies = []*Artifact{badArtifact}
 			})
 
 			It("should return a meaningful error", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(HavePrefix("Failed to fetch dependency for POM [junit:junit:4.9] from configured search repositories"))
+				Expect(err.Error()).To(HavePrefix(
+					"Failed to fetch POM [some.fake.org:some-fake-artifact:0.0.0] from configured search repositories"))
 			})
 		})
 
@@ -94,6 +91,12 @@ var _ = Describe("DependencyWalker", func() {
 
 				Expect(deps).ToNot(BeEmpty())
 				Expect(deps).To(ConsistOf(MatchFields(IgnoreExtras, Fields{
+					"GroupID":    Equal("org.hamcrest"),
+					"ArtifactID": Equal("hamcrest-core"),
+					"Version":    Equal("1.1"),
+					"Scope":      Equal("compile"),
+					"Repository": Equal(repositories[0]),
+				}), MatchFields(IgnoreExtras, Fields{
 					"GroupID":    Equal("junit"),
 					"ArtifactID": Equal("junit"),
 					"Version":    Equal("4.9"),

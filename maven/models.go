@@ -11,6 +11,7 @@ import (
 )
 
 var propertyRegex = regexp.MustCompile(`^\${(.*)}$`)
+var artifactRegex = regexp.MustCompile(`^(.+):(.+):(.+)$`)
 
 // TODO: do any assertions about Maven model version?
 type Artifact struct {
@@ -35,6 +36,19 @@ type Property struct {
 	Value string `xml:",innerxml"`
 }
 
+func NewArtifact(artifact string) *Artifact {
+	a := &Artifact{}
+
+	ms := artifactRegex.FindStringSubmatch(artifact)
+	if len(ms) > 3 {
+		a.GroupID = ms[1]
+		a.ArtifactID = ms[2]
+		a.Version = ms[3]
+	}
+
+	return a
+}
+
 func (a *Artifact) AsString() string {
 	return fmt.Sprintf("%s:%s:%s", a.GroupID, a.ArtifactID, a.Version)
 }
@@ -45,10 +59,12 @@ func (a *Artifact) IsValid() bool {
 }
 
 func (a *Artifact) SearchPath() (string, error) {
-	if a.GroupID == "" || a.ArtifactID == "" || a.Version == "" {
+	if !a.IsValid() {
 		return "", errors.New("invalid POM definition")
 	}
-	return fmt.Sprintf("%s/%s/%s/", strings.Replace(a.GroupID, ".", "/", -1), a.ArtifactID, a.Version), nil
+	return fmt.Sprintf("%s/%s/%s/%s-%s.pom",
+		strings.Replace(a.GroupID, ".", "/", -1), a.ArtifactID, a.Version, a.ArtifactID, a.Version),
+		nil
 }
 
 func (a *Artifact) findPropertyValue(property string) string {
@@ -66,7 +82,12 @@ func UnmarshalPOM(contents []byte) (*Artifact, error) {
 	decoder := xml.NewDecoder(reader)
 	decoder.CharsetReader = charset.NewReaderLabel
 	if err := decoder.Decode(pom); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "error parsing POM")
+	}
+
+	// read GroupID from parent block if need be
+	if pom.GroupID == "" && pom.Parent != nil {
+		pom.GroupID = pom.Parent.GroupID
 	}
 
 	// interpolate Maven properties for Versions
@@ -76,7 +97,7 @@ func UnmarshalPOM(contents []byte) (*Artifact, error) {
 			prop := ms[1]
 			propVal := pom.findPropertyValue(prop)
 			if propVal == "" {
-				return nil, errors.Errorf("error parsing POM: error interpolating Maven properties")
+				return nil, errors.Errorf("error parsing POM : error interpolating Maven properties")
 			}
 			dep.Version = propVal
 		}

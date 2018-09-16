@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
-
 	"github.com/jspawar/generate-bazel-workspace-gradle/logging"
 	"github.com/pkg/errors"
 )
@@ -28,10 +26,26 @@ func (w *DependencyWalker) TraversePOM(pom *Artifact) ([]Artifact, error) {
 
 	logger.Debug().Msgf("Searching for POM in repository : %s", repository)
 	res, err := http.Get(repository + searchPath)
-	if err != nil || res.StatusCode != 200 {
-		panic(err)
+	if err != nil {
+		return nil, errors.Wrapf(err,
+			"Failed to fetch POM [%s] from configured search repositories",
+			pom.AsString())
+	}
+	if res.StatusCode != 200 {
+		return nil, errors.New(fmt.Sprintf(
+			"Failed to fetch POM [%s] from configured search repositories",
+			pom.AsString()))
 	}
 	defer res.Body.Close()
+
+	bs, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+	pom, err = UnmarshalPOM(bs)
+	if err != nil {
+		panic(err)
+	}
 
 	pom.Repository = repository
 	deps := []Artifact{*pom}
@@ -43,8 +57,8 @@ func (w *DependencyWalker) TraversePOM(pom *Artifact) ([]Artifact, error) {
 		traversedDeps, err := w.traverseArtifact(*dep)
 		if err != nil {
 			return nil, errors.Wrapf(err,
-				"Failed to fetch dependency for POM [%s] from configured search repositories",
-				pom.AsString())
+				"Failed to fetch POM [%s] from configured search repositories",
+				dep.AsString())
 		}
 		deps = append(deps, traversedDeps...)
 	}
@@ -82,34 +96,15 @@ func (w *DependencyWalker) traverseArtifact(artifact Artifact) ([]Artifact, erro
 			artifact.AsString()))
 	}
 
-	bs, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	body := string(bs)
-	pomPath := fmt.Sprintf("%s-%s.pom", artifact.ArtifactID, artifact.Version)
-	if !strings.Contains(body, pomPath) {
-		return nil, errors.New("Failed to find POM in any repository for artifact : " + artifact.AsString())
-	}
 	// can safely add this artifact to result slice
 	w.cache[artifact.AsString()] = repository
 	artifact.Repository = repository
 	deps := []Artifact{artifact}
 
-	logger.Debug().Msgf("Reading POM at : %s", repository+searchPath+pomPath)
-	res.Body.Close()
-	res, err = http.Get(repository + searchPath + pomPath)
-	if err != nil || res.StatusCode != 200 {
-		panic(err)
-	}
-	defer res.Body.Close()
-
-	bs, err = ioutil.ReadAll(res.Body)
+	bs, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		panic(err)
 	}
-
 	artifactPom, err := UnmarshalPOM(bs)
 	if err != nil {
 		panic(err)

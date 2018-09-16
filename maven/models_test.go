@@ -11,11 +11,48 @@ import (
 var _ = Describe("Models", func() {
 	var (
 		err       error
+		artifactString string
 		pomString string
 		pom       *Artifact
 	)
 
-	Context("Given a pom.xml file", func() {
+	Context("Given an artifact definition as a string", func() {
+		JustBeforeEach(func() {
+			pom = NewArtifact(artifactString)
+		})
+
+		Context("that is valid", func() {
+			BeforeEach(func() {
+				artifactString = "some.group:with.some.artifact:1.0.0-SNAPSHOT"
+			})
+
+			It("should return an artifact object without error", func() {
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pom).ToNot(BeNil())
+
+				Expect(pom.GroupID).To(Equal("some.group"))
+				Expect(pom.ArtifactID).To(Equal("with.some.artifact"))
+				Expect(pom.Version).To(Equal("1.0.0-SNAPSHOT"))
+			})
+		})
+
+		Context("that is invalid", func() {
+			BeforeEach(func() {
+				artifactString = "some.group:with.some.artifact"
+			})
+
+			It("should return an empty object", func() {
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pom).ToNot(BeNil())
+
+				Expect(pom.GroupID).To(BeEmpty())
+				Expect(pom.ArtifactID).To(BeEmpty())
+				Expect(pom.Version).To(BeEmpty())
+			})
+		})
+	})
+
+	Context("Given contents of a pom.xml file", func() {
 		JustBeforeEach(func() {
 			pom, err = UnmarshalPOM([]byte(pomString))
 		})
@@ -157,6 +194,67 @@ var _ = Describe("Models", func() {
 					}))))
 				})
 			})
+
+			Context("with a GroupID inherited from a parent POM", func() {
+				BeforeEach(func() {
+					pomString = `
+					<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+						<modelVersion>4.0.0</modelVersion>
+						<parent>
+							<groupId>org.apache.commons</groupId>
+							<artifactId>commons-parent</artifactId>
+							<version>46</version>
+						</parent>
+						<artifactId>commons-text</artifactId>
+						<version>1.4</version>
+						<name>Apache Commons Text</name>
+						<dependencies>
+							<dependency>
+								<groupId>org.apache.commons</groupId>
+								<artifactId>commons-lang3</artifactId>
+								<version>3.7</version>
+							</dependency>
+							<!-- testing -->
+							<dependency>
+								<groupId>org.junit.jupiter</groupId>
+								<artifactId>junit-jupiter-engine</artifactId>
+								<version>5.2.0</version>
+								<scope>test</scope>
+							</dependency>
+						</dependencies>
+					</project>
+					`
+				})
+
+				It("should deserialize without error", func() {
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(pom.ModelVersion).To(Equal("4.0.0"))
+					Expect(pom.Parent).To(PointTo(MatchFields(IgnoreExtras, Fields{
+						"GroupID":    Equal("org.apache.commons"),
+						"ArtifactID": Equal("commons-parent"),
+						"Version":    Equal("46"),
+						"Scope":      BeEmpty(),
+					})))
+					Expect(pom.GroupID).To(Equal("org.apache.commons"))
+					Expect(pom.ArtifactID).To(Equal("commons-text"))
+					Expect(pom.Version).To(Equal("1.4"))
+
+					Expect(pom.Dependencies).ToNot(BeNil())
+					Expect(pom.Dependencies).To(HaveLen(2))
+					Expect(pom.Dependencies).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
+						"GroupID":    Equal("org.apache.commons"),
+						"ArtifactID": Equal("commons-lang3"),
+						"Version":    Equal("3.7"),
+						"Scope":      BeEmpty(),
+					})), PointTo(MatchFields(IgnoreExtras, Fields{
+						"GroupID":    Equal("org.junit.jupiter"),
+						"ArtifactID": Equal("junit-jupiter-engine"),
+						"Version":    Equal("5.2.0"),
+						"Scope":      Equal("test"),
+					}))))
+				})
+			})
 		})
 	})
 
@@ -181,7 +279,7 @@ var _ = Describe("Models", func() {
 
 				It("should return a valid search path", func() {
 					Expect(err).NotTo(HaveOccurred())
-					Expect(searchPath).To(Equal("some/fake/org/some-fake-artifact/0.0.0/"))
+					Expect(searchPath).To(Equal("some/fake/org/some-fake-artifact/0.0.0/some-fake-artifact-0.0.0.pom"))
 				})
 			})
 
