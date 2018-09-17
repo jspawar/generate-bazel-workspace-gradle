@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"strings"
 	"github.com/jspawar/generate-bazel-workspace-gradle/maven"
-	"github.com/jspawar/generate-bazel-workspace-gradle/logging"
+	_ "github.com/jspawar/generate-bazel-workspace-gradle/logging"
 	"os"
 )
 
@@ -30,7 +30,7 @@ func init() {
 
 func artifactRunner(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
-		logging.Logger.Error().Msgf("Invalid arg(s), see correct usage below:\n%s", cmd.UsageString())
+		logger.Errorf("Invalid arg(s), see correct usage below:\n%s", cmd.UsageString())
 		os.Exit(1)
 	}
 
@@ -45,7 +45,7 @@ func artifactRunner(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 	for _, dep := range deps {
-		logging.Logger.Info().Msgf("Found dep [%s] in repository [%s]", dep.AsString(), dep.Repository)
+		logger.Infof("Found dep [%s] in repository [%s]", dep.AsString(), dep.Repository)
 	}
 
 	// TODO: write Bazel workspace files

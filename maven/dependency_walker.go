@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"github.com/jspawar/generate-bazel-workspace-gradle/logging"
+	_ "github.com/jspawar/generate-bazel-workspace-gradle/logging"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 var (
-	logger = logging.Logger
+	logger = zap.S()
 )
 
 type DependencyWalker struct {
@@ -24,7 +25,7 @@ func (w *DependencyWalker) TraversePOM(pom *Artifact) ([]Artifact, error) {
 		panic(err)
 	}
 
-	logger.Debug().Msgf("Searching for POM in repository : %s", repository)
+	logger.Debugf("Searching for POM in repository : %s", repository)
 	res, err := http.Get(repository + searchPath)
 	if err != nil {
 		return nil, errors.Wrapf(err,
@@ -51,9 +52,9 @@ func (w *DependencyWalker) TraversePOM(pom *Artifact) ([]Artifact, error) {
 	deps := []Artifact{*pom}
 	w.cache = map[string]string{deps[0].AsString(): repository}
 
-	logger.Debug().Msg("Traversing dependencies...")
+	logger.Debug("Traversing dependencies...")
 	for _, dep := range pom.Dependencies {
-		logger.Debug().Msgf("Traversing dependency : %s", dep.AsString())
+		logger.Debugf("Traversing dependency : %s", dep.AsString())
 		traversedDeps, err := w.traverseArtifact(*dep)
 		if err != nil {
 			return nil, errors.Wrapf(err,
@@ -69,7 +70,7 @@ func (w *DependencyWalker) TraversePOM(pom *Artifact) ([]Artifact, error) {
 func (w *DependencyWalker) traverseArtifact(artifact Artifact) ([]Artifact, error) {
 	// check cache to avoid unnecessary traversal
 	if _, isCached := w.cache[artifact.AsString()]; isCached {
-		logger.Debug().Msgf("Artifact already discovered : %s", artifact.AsString())
+		logger.Debugf("Artifact already discovered : %s", artifact.AsString())
 		return nil, nil
 	}
 	// TODO: move this check up?
@@ -83,7 +84,7 @@ func (w *DependencyWalker) traverseArtifact(artifact Artifact) ([]Artifact, erro
 		panic(err)
 	}
 
-	logger.Debug().Msgf("Searching for artifact [%s] in repository : %s", artifact.AsString(), repository)
+	logger.Debugf("Searching for artifact [%s] in repository : %s", artifact.AsString(), repository)
 	res, err := http.Get(repository + searchPath)
 	if err != nil {
 		return nil, errors.Wrapf(err,

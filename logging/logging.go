@@ -1,10 +1,19 @@
 package logging
 
 import (
-	"os"
-
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-var Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Caller().Logger()
+func init() {
+	// enable colorized log levels
+	logEncConfig := zap.NewDevelopmentEncoderConfig()
+	logEncConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+
+	logConfig := zap.NewDevelopmentConfig()
+	logConfig.EncoderConfig = logEncConfig
+
+	// replace global zap logger
+	globalLogger, _ := logConfig.Build()
+	zap.ReplaceGlobals(globalLogger)
+}

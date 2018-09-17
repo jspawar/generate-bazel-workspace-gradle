@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"fmt"
 	"os"
+	"go.uber.org/zap"
 )
 
+var logger = zap.S()
 const rootLongHelp =
 `This utility is intended to assist migration of Maven/Gradle projects to Bazel.
 
@@ -23,7 +24,7 @@ func init() {
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		logger.Error(err.Error())
 		os.Exit(1)
 	}
 }

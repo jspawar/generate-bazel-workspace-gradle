@@ -57,7 +57,6 @@ var _ = Describe("Models", func() {
 			pom, err = UnmarshalPOM([]byte(pomString))
 		})
 
-		// TODO: need to account for POM properties used to define dep versions
 		Context("that is valid", func() {
 			Context("with no Maven properties", func() {
 				BeforeEach(func() {
