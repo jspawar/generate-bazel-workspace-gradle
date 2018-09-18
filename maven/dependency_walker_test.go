@@ -10,11 +10,13 @@ import (
 
 var _ = Describe("DependencyWalker", func() {
 	var (
-		err          error
-		repositories []string
-		walker       *DependencyWalker
-		pom          *Artifact
-		deps         []Artifact
+		err                 error
+		repositories        []string
+		walker              *DependencyWalker
+		pom                 *Artifact
+		deps                []Artifact
+		mockMavenRepo       *MockMavenRepository
+		mockServedArtifacts []Artifact
 	)
 
 	BeforeEach(func() {
@@ -27,19 +29,30 @@ var _ = Describe("DependencyWalker", func() {
 					GroupID:    "org.hamcrest",
 					ArtifactID: "hamcrest-core",
 					Version:    "1.1",
+					Scope:      "compile",
 				},
 			},
 		}
 	})
 
 	JustBeforeEach(func() {
+		mockMavenRepo = &MockMavenRepository{Artifacts: mockServedArtifacts}
+		mockMavenRepo.Start()
+
 		walker = &DependencyWalker{Repositories: repositories}
 		deps, err = walker.TraversePOM(pom)
 	})
 
+	AfterEach(func() {
+		mockMavenRepo.Stop()
+		mockServedArtifacts = nil
+	})
+
 	Context("Given a single repository search", func() {
 		BeforeEach(func() {
-			repositories = []string{"https://repo.maven.apache.org/maven2/"}
+			mockServedArtifacts = []Artifact{*pom}
+
+			repositories = []string{"http://localhost:8080/"}
 		})
 
 		Context("where all dependencies are available in the one repository", func() {
@@ -65,6 +78,9 @@ var _ = Describe("DependencyWalker", func() {
 
 		Context("where all dependencies are NOT available in the one repository", func() {
 			BeforeEach(func() {
+				// mock Maven repository serves no artifacts
+				mockServedArtifacts = make([]Artifact, 0)
+
 				pom = &Artifact{
 					GroupID:    "some.fake.org",
 					ArtifactID: "some-fake-artifact",
@@ -81,6 +97,8 @@ var _ = Describe("DependencyWalker", func() {
 
 		Context("where a dependency is encountered twice", func() {
 			BeforeEach(func() {
+				mockServedArtifacts = []Artifact{*pom}
+
 				pom.Dependencies = []*Artifact{
 					{GroupID: pom.GroupID, ArtifactID: pom.ArtifactID, Version: pom.Version},
 				}

@@ -15,16 +15,17 @@ var artifactRegex = regexp.MustCompile(`^(.+):(.+):(.+)$`)
 
 // TODO: do any assertions about Maven model version?
 type Artifact struct {
-	GroupID      string     `xml:"groupId"`
-	ArtifactID   string     `xml:"artifactId"`
-	Version      string     `xml:"version"`
-	Scope        string     `xml:"scope"`
-	Repository   string
-	SHA          string
-	Parent       *Artifact  `xml:"parent"`
-	ModelVersion string     `xml:"modelVersion"`
-	Properties   Properties `xml:"properties"`
-	Dependencies []*Artifact `xml:"dependencies>dependency"`
+	XMLName      xml.Name
+	GroupID      string      `xml:"groupId"`
+	ArtifactID   string      `xml:"artifactId"`
+	Version      string      `xml:"version"`
+	Scope        string      `xml:"scope,omitempty"`
+	Repository   string      `xml:"-"`
+	SHA          string      `xml:"-"`
+	Parent       *Artifact   `xml:"parent,omitempty"`
+	ModelVersion string      `xml:"modelVersion,omitempty"`
+	Properties   Properties  `xml:"properties,omitempty"`
+	Dependencies []*Artifact `xml:"dependencies>dependency,omitempty"`
 }
 
 type Properties struct {
@@ -32,8 +33,8 @@ type Properties struct {
 }
 
 type Property struct {
-	XMLName  xml.Name
-	Value string `xml:",innerxml"`
+	XMLName xml.Name
+	Value   string `xml:",innerxml"`
 }
 
 func NewArtifact(artifact string) *Artifact {
