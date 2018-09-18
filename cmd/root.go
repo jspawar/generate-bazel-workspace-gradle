@@ -14,7 +14,7 @@ All of the subcommands output Bazel workspace files.
 `
 
 var rootCmd = &cobra.Command{
-	Use: "generate-bazel-workspace",
+	Use: "generate-bazel-workspace-gradle",
 	Long: rootLongHelp,
 }
 

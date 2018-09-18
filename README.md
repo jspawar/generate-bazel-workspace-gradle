@@ -7,13 +7,13 @@ Utility to create Bazel workspace files to migrate Maven and Gradle projects
 ## Usage
 ```
 Usage:
-  generate-bazel-workspace [command]
+  generate-bazel-workspace-gradle [command]
 
 Available Commands:
   artifact    Generates Bazel workspace files from a single Maven artifact and its transitive dependencies
   help        Help about any command
 
 Flags:
-  -h, --help   help for generate-bazel-workspace
+  -h, --help   help for generate-bazel-workspace-gradle
 ```
 
