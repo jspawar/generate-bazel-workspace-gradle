@@ -1,3 +1,4 @@
 steps:
 - name: 'gcr.io/cloud-builders/go'
   args: ['test', '-v', './...', '-ginkgo.v']
+  env: ['PROJECT_ROOT=github.com/jspawar/generate-bazel-workspace-gradle']
