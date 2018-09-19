@@ -111,6 +111,7 @@ func UnmarshalPOM(contents []byte) (*Artifact, error) {
 				return nil, errors.Errorf(
 					"error parsing POM : value not found to interpolate Maven property [%s]", prop)
 			}
+			dep.Version = propVal
 		}
 	}
 
