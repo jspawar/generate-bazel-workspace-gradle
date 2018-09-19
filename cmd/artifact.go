@@ -38,6 +38,7 @@ func artifactRunner(cmd *cobra.Command, args []string) {
 	searchRepositories = strings.Replace(searchRepositories, ", ", ",", -1)
 	depWalker := &maven.DependencyWalker{
 		Repositories: strings.Split(searchRepositories, ","),
+		RemoteRepository: maven.NewRemoteRepository(),
 	}
 
 	deps, err := depWalker.TraversePOM(artifactPom)

@@ -91,16 +91,26 @@ func UnmarshalPOM(contents []byte) (*Artifact, error) {
 		pom.GroupID = pom.Parent.GroupID
 	}
 
+	// read parent Maven properties if need be
+	if pom.Parent != nil && pom.Parent.Properties.Values != nil && len(pom.Parent.Properties.Values) > 0 {
+		if pom.Properties.Values == nil {
+			pom.Properties.Values = pom.Parent.Properties.Values
+		} else {
+			pom.Properties.Values = append(pom.Properties.Values, pom.Parent.Properties.Values...)
+		}
+	}
+
 	// interpolate Maven properties for Versions
 	for _, dep := range pom.Dependencies {
+		// TODO: replace with call to `InterpolateFromProperties`
 		ms := propertyRegex.FindStringSubmatch(dep.Version)
 		if len(ms) > 1 {
 			prop := ms[1]
 			propVal := pom.findPropertyValue(prop)
 			if propVal == "" {
-				return nil, errors.Errorf("error parsing POM : error interpolating Maven properties")
+				return nil, errors.Errorf(
+					"error parsing POM : value not found to interpolate Maven property [%s]", prop)
 			}
-			dep.Version = propVal
 		}
 	}
 

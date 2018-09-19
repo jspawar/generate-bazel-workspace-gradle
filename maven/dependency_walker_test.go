@@ -6,17 +6,18 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 
 	. "github.com/jspawar/generate-bazel-workspace-gradle/maven"
+	"github.com/jspawar/generate-bazel-workspace-gradle/maven/mavenfakes"
+	"github.com/pkg/errors"
 )
 
 var _ = Describe("DependencyWalker", func() {
 	var (
-		err                 error
-		repositories        []string
-		walker              *DependencyWalker
-		pom                 *Artifact
-		deps                []Artifact
-		mockMavenRepo       *MockMavenRepository
-		mockServedArtifacts []Artifact
+		err              error
+		repositories     []string
+		remoteRepository *mavenfakes.FakeRemoteRepository
+		walker           *DependencyWalker
+		pom              *Artifact
+		deps             []Artifact
 	)
 
 	BeforeEach(func() {
@@ -33,24 +34,18 @@ var _ = Describe("DependencyWalker", func() {
 				},
 			},
 		}
+		remoteRepository = new(mavenfakes.FakeRemoteRepository)
 	})
 
 	JustBeforeEach(func() {
-		mockMavenRepo = &MockMavenRepository{Artifacts: mockServedArtifacts}
-		mockMavenRepo.Start()
-
-		walker = &DependencyWalker{Repositories: repositories}
+		walker = &DependencyWalker{Repositories: repositories, RemoteRepository: remoteRepository}
 		deps, err = walker.TraversePOM(pom)
-	})
-
-	AfterEach(func() {
-		mockMavenRepo.Stop()
-		mockServedArtifacts = nil
 	})
 
 	Context("Given a single repository search", func() {
 		BeforeEach(func() {
-			mockServedArtifacts = []Artifact{*pom}
+			remoteRepository.FetchRemoteArtifactReturnsOnCall(0, pom, nil)
+			remoteRepository.FetchRemoteArtifactReturnsOnCall(1, pom.Dependencies[0], nil)
 
 			repositories = []string{"http://localhost:8080/"}
 		})
@@ -78,8 +73,7 @@ var _ = Describe("DependencyWalker", func() {
 
 		Context("where all dependencies are NOT available in the one repository", func() {
 			BeforeEach(func() {
-				// mock Maven repository serves no artifacts
-				mockServedArtifacts = make([]Artifact, 0)
+				remoteRepository.FetchRemoteArtifactReturnsOnCall(0, nil, errors.New("oh no"))
 
 				pom = &Artifact{
 					GroupID:    "some.fake.org",
@@ -90,14 +84,15 @@ var _ = Describe("DependencyWalker", func() {
 
 			It("should return a meaningful error", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(HavePrefix(
-					"Failed to fetch POM [some.fake.org:some-fake-artifact:0.0.0] from configured search repositories"))
+				Expect(err.Error()).To(Equal(
+					"Failed to traverse POM [some.fake.org:some-fake-artifact:0.0.0] with configured search repositories: oh no"))
 			})
 		})
 
 		Context("where a dependency is encountered twice", func() {
 			BeforeEach(func() {
-				mockServedArtifacts = []Artifact{*pom}
+				remoteRepository.FetchRemoteArtifactReturnsOnCall(0, pom, nil)
+				remoteRepository.FetchRemoteArtifactReturnsOnCall(1, pom, nil)
 
 				pom.Dependencies = []*Artifact{
 					{GroupID: pom.GroupID, ArtifactID: pom.ArtifactID, Version: pom.Version},
@@ -109,12 +104,6 @@ var _ = Describe("DependencyWalker", func() {
 
 				Expect(deps).ToNot(BeEmpty())
 				Expect(deps).To(ConsistOf(MatchFields(IgnoreExtras, Fields{
-					"GroupID":    Equal("org.hamcrest"),
-					"ArtifactID": Equal("hamcrest-core"),
-					"Version":    Equal("1.1"),
-					"Scope":      Equal("compile"),
-					"Repository": Equal(repositories[0]),
-				}), MatchFields(IgnoreExtras, Fields{
 					"GroupID":    Equal("junit"),
 					"ArtifactID": Equal("junit"),
 					"Version":    Equal("4.9"),

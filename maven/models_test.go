@@ -27,7 +27,6 @@ var _ = Describe("Models", func() {
 			})
 
 			It("should return an artifact object without error", func() {
-				Expect(err).ToNot(HaveOccurred())
 				Expect(pom).ToNot(BeNil())
 
 				Expect(pom.GroupID).To(Equal("some.group"))
@@ -42,7 +41,6 @@ var _ = Describe("Models", func() {
 			})
 
 			It("should return an empty object", func() {
-				Expect(err).ToNot(HaveOccurred())
 				Expect(pom).ToNot(BeNil())
 
 				Expect(pom.GroupID).To(BeEmpty())
