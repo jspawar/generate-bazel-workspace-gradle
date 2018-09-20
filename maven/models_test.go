@@ -55,8 +55,8 @@ var _ = Describe("Models", func() {
 			pom, err = UnmarshalPOM([]byte(pomString))
 		})
 
-		Context("that is valid", func() {
-			Context("with no Maven properties", func() {
+		Context("with no Maven properties", func() {
+			Context("and pom.xml has all necessary properties", func() {
 				BeforeEach(func() {
 					pomString = `
 					<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -118,7 +118,168 @@ var _ = Describe("Models", func() {
 				})
 			})
 
-			Context("with Maven properties specifying dependency versions", func() {
+			Context("and pom.xml is missing artifact's group ID but has a valid parent", func() {
+				BeforeEach(func() {
+					pomString = `
+					<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+						<modelVersion>4.0.0</modelVersion>
+						<parent>
+							<groupId>org.apache.commons</groupId>
+							<artifactId>commons-parent</artifactId>
+							<version>46</version>
+						</parent>
+						<artifactId>commons-text</artifactId>
+						<version>1.4</version>
+						<name>Apache Commons Text</name>
+						<dependencies>
+							<dependency>
+								<groupId>org.apache.commons</groupId>
+								<artifactId>commons-lang3</artifactId>
+								<version>3.7</version>
+							</dependency>
+							<!-- testing -->
+							<dependency>
+								<groupId>org.junit.jupiter</groupId>
+								<artifactId>junit-jupiter-engine</artifactId>
+								<version>5.2.0</version>
+								<scope>test</scope>
+							</dependency>
+						</dependencies>
+					</project>
+					`
+				})
+
+				It("should deserialize without error", func() {
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(pom.ModelVersion).To(Equal("4.0.0"))
+					Expect(pom.Parent).To(PointTo(MatchFields(IgnoreExtras, Fields{
+						"GroupID":    Equal("org.apache.commons"),
+						"ArtifactID": Equal("commons-parent"),
+						"Version":    Equal("46"),
+						"Scope":      BeEmpty(),
+					})))
+					Expect(pom.GroupID).To(Equal("org.apache.commons"))
+					Expect(pom.ArtifactID).To(Equal("commons-text"))
+					Expect(pom.Version).To(Equal("1.4"))
+
+					Expect(pom.Dependencies).ToNot(BeNil())
+					Expect(pom.Dependencies).To(HaveLen(2))
+					Expect(pom.Dependencies).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
+						"GroupID":    Equal("org.apache.commons"),
+						"ArtifactID": Equal("commons-lang3"),
+						"Version":    Equal("3.7"),
+						"Scope":      BeEmpty(),
+					})), PointTo(MatchFields(IgnoreExtras, Fields{
+						"GroupID":    Equal("org.junit.jupiter"),
+						"ArtifactID": Equal("junit-jupiter-engine"),
+						"Version":    Equal("5.2.0"),
+						"Scope":      Equal("test"),
+					}))))
+				})
+			})
+
+			Context("and pom.xml is missing artifact's version but has a valid parent", func() {
+				BeforeEach(func() {
+					pomString = `
+					<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+						<modelVersion>4.0.0</modelVersion>
+						<parent>
+							<groupId>org.apache.commons</groupId>
+							<artifactId>commons-parent</artifactId>
+							<version>46</version>
+						</parent>
+						<groupId>org.apache.commons</groupId>
+						<artifactId>commons-text</artifactId>
+						<name>Apache Commons Text</name>
+						<dependencies>
+							<dependency>
+								<groupId>org.apache.commons</groupId>
+								<artifactId>commons-lang3</artifactId>
+								<version>3.7</version>
+							</dependency>
+							<!-- testing -->
+							<dependency>
+								<groupId>org.junit.jupiter</groupId>
+								<artifactId>junit-jupiter-engine</artifactId>
+								<version>5.2.0</version>
+								<scope>test</scope>
+							</dependency>
+						</dependencies>
+					</project>
+					`
+				})
+
+				It("should deserialize without error", func() {
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(pom.ModelVersion).To(Equal("4.0.0"))
+					Expect(pom.Parent).To(PointTo(MatchFields(IgnoreExtras, Fields{
+						"GroupID":    Equal("org.apache.commons"),
+						"ArtifactID": Equal("commons-parent"),
+						"Version":    Equal("46"),
+						"Scope":      BeEmpty(),
+					})))
+					Expect(pom.GroupID).To(Equal("org.apache.commons"))
+					Expect(pom.ArtifactID).To(Equal("commons-text"))
+					Expect(pom.Version).To(Equal("46"))
+
+					Expect(pom.Dependencies).ToNot(BeNil())
+					Expect(pom.Dependencies).To(HaveLen(2))
+					Expect(pom.Dependencies).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
+						"GroupID":    Equal("org.apache.commons"),
+						"ArtifactID": Equal("commons-lang3"),
+						"Version":    Equal("3.7"),
+						"Scope":      BeEmpty(),
+					})), PointTo(MatchFields(IgnoreExtras, Fields{
+						"GroupID":    Equal("org.junit.jupiter"),
+						"ArtifactID": Equal("junit-jupiter-engine"),
+						"Version":    Equal("5.2.0"),
+						"Scope":      Equal("test"),
+					}))))
+				})
+			})
+
+			Context("and pom.xml is missing a necessary block", func() {
+				BeforeEach(func() {
+					pomString = `
+					<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+						<modelVersion>4.0.0</modelVersion>
+						<parent>
+							<groupId>org.apache.commons</groupId>
+							<artifactId>commons-parent</artifactId>
+							<version>46</version>
+						</parent>
+						<groupId>org.apache.commons</groupId>
+						<version>1.4</version>
+						<name>Apache Commons Text</name>
+						<dependencies>
+							<dependency>
+								<groupId>org.apache.commons</groupId>
+								<artifactId>commons-lang3</artifactId>
+								<version>3.7</version>
+							</dependency>
+							<!-- testing -->
+							<dependency>
+								<groupId>org.junit.jupiter</groupId>
+								<artifactId>junit-jupiter-engine</artifactId>
+								<version>5.2.0</version>
+								<scope>test</scope>
+							</dependency>
+						</dependencies>
+					</project>
+					`
+				})
+
+				It("should return a meaningful error", func() {
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(Equal("error parsing POM [org.apache.commons::1.4] : input POM was invalid"))
+				})
+			})
+		})
+
+		Context("with Maven properties", func() {
+			Context("that specifies a dependency's version", func() {
 				BeforeEach(func() {
 					pomString = `
 					<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -192,7 +353,7 @@ var _ = Describe("Models", func() {
 				})
 			})
 
-			Context("with a GroupID inherited from a parent POM", func() {
+			Context("that failed to specify a dependency's version", func() {
 				BeforeEach(func() {
 					pomString = `
 					<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -202,6 +363,7 @@ var _ = Describe("Models", func() {
 							<artifactId>commons-parent</artifactId>
 							<version>46</version>
 						</parent>
+						<groupId>org.apache.commons</groupId>
 						<artifactId>commons-text</artifactId>
 						<version>1.4</version>
 						<name>Apache Commons Text</name>
@@ -209,47 +371,26 @@ var _ = Describe("Models", func() {
 							<dependency>
 								<groupId>org.apache.commons</groupId>
 								<artifactId>commons-lang3</artifactId>
-								<version>3.7</version>
+								<version>${apache.lang.version}</version>
 							</dependency>
 							<!-- testing -->
 							<dependency>
 								<groupId>org.junit.jupiter</groupId>
 								<artifactId>junit-jupiter-engine</artifactId>
-								<version>5.2.0</version>
+								<version>${junit.jupiter.version}</version>
 								<scope>test</scope>
 							</dependency>
 						</dependencies>
+						<properties>
+							<apache.lang.version>3.7</apache.lang.version>
+						</properties>
 					</project>
 					`
 				})
 
-				It("should deserialize without error", func() {
-					Expect(err).NotTo(HaveOccurred())
-
-					Expect(pom.ModelVersion).To(Equal("4.0.0"))
-					Expect(pom.Parent).To(PointTo(MatchFields(IgnoreExtras, Fields{
-						"GroupID":    Equal("org.apache.commons"),
-						"ArtifactID": Equal("commons-parent"),
-						"Version":    Equal("46"),
-						"Scope":      BeEmpty(),
-					})))
-					Expect(pom.GroupID).To(Equal("org.apache.commons"))
-					Expect(pom.ArtifactID).To(Equal("commons-text"))
-					Expect(pom.Version).To(Equal("1.4"))
-
-					Expect(pom.Dependencies).ToNot(BeNil())
-					Expect(pom.Dependencies).To(HaveLen(2))
-					Expect(pom.Dependencies).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
-						"GroupID":    Equal("org.apache.commons"),
-						"ArtifactID": Equal("commons-lang3"),
-						"Version":    Equal("3.7"),
-						"Scope":      BeEmpty(),
-					})), PointTo(MatchFields(IgnoreExtras, Fields{
-						"GroupID":    Equal("org.junit.jupiter"),
-						"ArtifactID": Equal("junit-jupiter-engine"),
-						"Version":    Equal("5.2.0"),
-						"Scope":      Equal("test"),
-					}))))
+				It("should return a meaningful error", func() {
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(Equal("error parsing POM : value not found to interpolate Maven property [junit.jupiter.version]"))
 				})
 			})
 		})

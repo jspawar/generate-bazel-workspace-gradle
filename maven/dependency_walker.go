@@ -43,7 +43,9 @@ func (w *DependencyWalker) TraversePOM(pom *Artifact) ([]Artifact, error) {
 				"Failed to fetch POM [%s] from configured search repositories",
 				dep.AsString())
 		}
-		deps = append(deps, traversedDeps...)
+		if traversedDeps != nil {
+			deps = append(deps, traversedDeps...)
+		}
 	}
 
 	return deps, nil
@@ -54,10 +56,6 @@ func (w *DependencyWalker) traverseArtifact(artifact Artifact) ([]Artifact, erro
 	if _, isCached := w.cache[artifact.AsString()]; isCached {
 		logger.Debugf("Artifact already discovered : %s", artifact.AsString())
 		return nil, nil
-	}
-	// TODO: move this check up?
-	if !artifact.IsValid() {
-		return nil, errors.New("Invalid Maven artifact definition : " + artifact.AsString())
 	}
 
 	repository := w.Repositories[0]

@@ -43,6 +43,7 @@ func artifactRunner(cmd *cobra.Command, args []string) {
 
 	deps, err := depWalker.TraversePOM(artifactPom)
 	if err != nil {
+		logger.Errorf("Failed to traverse POM [%s] : %s", artifactPom.AsString(), err)
 		panic(err)
 	}
 	for _, dep := range deps {

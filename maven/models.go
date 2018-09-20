@@ -101,9 +101,14 @@ func UnmarshalPOM(contents []byte) (*Artifact, error) {
 		return nil, errors.Wrapf(err, "error parsing POM")
 	}
 
-	// read GroupID from parent block if need be
+	// read group ID from parent block if need be
 	if pom.GroupID == "" && pom.Parent != nil {
 		pom.GroupID = pom.Parent.GroupID
+	}
+
+	// read version from parent block if need be
+	if pom.Version == "" && pom.Parent != nil {
+		pom.Version = pom.Parent.Version
 	}
 
 	// read parent Maven properties if need be
@@ -122,6 +127,11 @@ func UnmarshalPOM(contents []byte) (*Artifact, error) {
 			return nil, err
 		}
 		dep.Version = interpolatedVersion
+	}
+
+	// throw error if deserialized POM is invalid
+	if !pom.IsValid() {
+		return nil, errors.Errorf("error parsing POM [%s] : input POM was invalid", pom.AsString())
 	}
 
 	return pom, nil
