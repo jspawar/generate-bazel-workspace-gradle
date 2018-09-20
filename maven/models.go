@@ -68,6 +68,21 @@ func (a *Artifact) SearchPath() (string, error) {
 		nil
 }
 
+func (a *Artifact) InterpolateFromProperties(interpolate string) (string, error) {
+	ms := propertyRegex.FindStringSubmatch(interpolate)
+	if len(ms) > 1 {
+		prop := ms[1]
+		propVal := a.findPropertyValue(prop)
+		if propVal == "" {
+			return "", errors.Errorf(
+				"error parsing POM : value not found to interpolate Maven property [%s]", prop)
+		}
+		return propVal, nil
+	} else {
+		return interpolate, nil
+	}
+}
+
 func (a *Artifact) findPropertyValue(property string) string {
 	for _, prop := range a.Properties.Values {
 		if prop.XMLName.Local == property {
@@ -102,17 +117,11 @@ func UnmarshalPOM(contents []byte) (*Artifact, error) {
 
 	// interpolate Maven properties for Versions
 	for _, dep := range pom.Dependencies {
-		// TODO: replace with call to `InterpolateFromProperties`
-		ms := propertyRegex.FindStringSubmatch(dep.Version)
-		if len(ms) > 1 {
-			prop := ms[1]
-			propVal := pom.findPropertyValue(prop)
-			if propVal == "" {
-				return nil, errors.Errorf(
-					"error parsing POM : value not found to interpolate Maven property [%s]", prop)
-			}
-			dep.Version = propVal
+		interpolatedVersion, err := pom.InterpolateFromProperties(dep.Version)
+		if err != nil {
+			return nil, err
 		}
+		dep.Version = interpolatedVersion
 	}
 
 	return pom, nil
