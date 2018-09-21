@@ -29,7 +29,7 @@ var _ = Describe("Artifact", func() {
 		It("returns the usage text", func() {
 			Expect(sess.Wait().Err.Contents()).To(ContainSubstring(`Invalid arg(s), see correct usage below:`))
 
-			Eventually(sess).Should(gexec.Exit(1))
+			Eventually(sess, "5s").Should(gexec.Exit(1))
 		})
 	})
 
@@ -40,7 +40,7 @@ var _ = Describe("Artifact", func() {
 
 		Context("with a valid artifact definition as input", func() {
 			It("should create Bazel workspace files", func() {
-				Eventually(sess).Should(gexec.Exit(0))
+				Eventually(sess, "30s").Should(gexec.Exit(0))
 			})
 		})
 	})
