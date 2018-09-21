@@ -18,6 +18,7 @@ func NewRemoteRepository() RemoteRepository {
 	return &remoteRepository{}
 }
 
+// TODO: test drive this
 func (r *remoteRepository) FetchRemoteArtifact(artifact *Artifact, remoteRepository string) (*Artifact, error) {
 	searchPath, err := artifact.SearchPath()
 	if err != nil {
@@ -27,12 +28,12 @@ func (r *remoteRepository) FetchRemoteArtifact(artifact *Artifact, remoteReposit
 	if err != nil {
 		return nil, errors.Wrapf(err,
 			"Failed to fetch POM [%s] from configured search repositories",
-			artifact.AsString())
+			artifact.GetMavenCoords())
 	}
 	if res.StatusCode != 200 {
 		return nil, errors.New(fmt.Sprintf(
 			"Failed to fetch POM [%s] from configured search repositories",
-			artifact.AsString()))
+			artifact.GetMavenCoords()))
 	}
 	defer res.Body.Close()
 

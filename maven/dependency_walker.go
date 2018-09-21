@@ -25,23 +25,23 @@ func (w *DependencyWalker) TraversePOM(pom *Artifact) ([]Artifact, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err,
 			"Failed to traverse POM [%s] with configured search repositories",
-			pom.AsString())
+			pom.GetMavenCoords())
 	}
 	pom = remotePom
 
 	// initialize cache
 	pom.Repository = repository
 	deps := []Artifact{*pom}
-	w.cache = map[string]string{deps[0].AsString(): repository}
+	w.cache = map[string]string{deps[0].GetMavenCoords(): repository}
 
 	logger.Debug("Traversing dependencies...")
 	for _, dep := range pom.Dependencies {
-		logger.Debugf("Traversing dependency : %s", dep.AsString())
+		logger.Debugf("Traversing dependency : %s", dep.GetMavenCoords())
 		traversedDeps, err := w.traverseArtifact(*dep)
 		if err != nil {
 			return nil, errors.Wrapf(err,
 				"Failed to fetch POM [%s] from configured search repositories",
-				dep.AsString())
+				dep.GetMavenCoords())
 		}
 		if traversedDeps != nil {
 			deps = append(deps, traversedDeps...)
@@ -53,14 +53,14 @@ func (w *DependencyWalker) TraversePOM(pom *Artifact) ([]Artifact, error) {
 
 func (w *DependencyWalker) traverseArtifact(artifact Artifact) ([]Artifact, error) {
 	// check cache to avoid unnecessary traversal
-	if _, isCached := w.cache[artifact.AsString()]; isCached {
-		logger.Debugf("Artifact already discovered : %s", artifact.AsString())
+	if _, isCached := w.cache[artifact.GetMavenCoords()]; isCached {
+		logger.Debugf("Artifact already discovered : %s", artifact.GetMavenCoords())
 		return nil, nil
 	}
 
 	repository := w.Repositories[0]
 
-	logger.Debugf("Searching for artifact [%s] in repository : %s", artifact.AsString(), repository)
+	logger.Debugf("Searching for artifact [%s] in repository : %s", artifact.GetMavenCoords(), repository)
 	remoteArtifact, err := w.RemoteRepository.FetchRemoteArtifact(&artifact, repository)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (w *DependencyWalker) traverseArtifact(artifact Artifact) ([]Artifact, erro
 	artifact = *remoteArtifact
 
 	// can safely add this artifact to result slice
-	w.cache[artifact.AsString()] = repository
+	w.cache[artifact.GetMavenCoords()] = repository
 	artifact.Repository = repository
 	deps := []Artifact{artifact}
 

@@ -50,7 +50,7 @@ func NewArtifact(artifact string) *Artifact {
 	return a
 }
 
-func (a *Artifact) AsString() string {
+func (a *Artifact) GetMavenCoords() string {
 	return fmt.Sprintf("%s:%s:%s", a.GroupID, a.ArtifactID, a.Version)
 }
 
@@ -66,6 +66,12 @@ func (a *Artifact) SearchPath() (string, error) {
 	return fmt.Sprintf("%s/%s/%s/%s-%s.pom",
 		strings.Replace(a.GroupID, ".", "/", -1), a.ArtifactID, a.Version, a.ArtifactID, a.Version),
 		nil
+}
+
+func (a *Artifact) GetBazelRule() string {
+	groupID := strings.Replace(a.GroupID, ".", "_", -1)
+	artifactID := strings.Replace(a.ArtifactID, "-", "_", -1)
+	return fmt.Sprintf("%s_%s", groupID, artifactID)
 }
 
 func (a *Artifact) InterpolateFromProperties(interpolate string) (string, error) {
@@ -131,7 +137,7 @@ func UnmarshalPOM(contents []byte) (*Artifact, error) {
 
 	// throw error if deserialized POM is invalid
 	if !pom.IsValid() {
-		return nil, errors.Errorf("error parsing POM [%s] : input POM was invalid", pom.AsString())
+		return nil, errors.Errorf("error parsing POM [%s] : input POM was invalid", pom.GetMavenCoords())
 	}
 
 	return pom, nil

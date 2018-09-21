@@ -431,5 +431,29 @@ var _ = Describe("Models", func() {
 				})
 			})
 		})
+
+		Context("to construct a Bazel rule name for", func() {
+			var (
+				bazelRuleName string
+			)
+
+			JustBeforeEach(func() {
+				bazelRuleName = pom.GetBazelRule()
+			})
+
+			Context("with valid artifact definition", func() {
+				BeforeEach(func() {
+					pom = &Artifact{
+						GroupID:    "some.fake.org",
+						ArtifactID: "some-fake-artifact",
+						Version:    "0.0.0",
+					}
+				})
+
+				It("should return a valid Bazel rule name", func() {
+					Expect(bazelRuleName).To(Equal("some_fake_org_some_fake_artifact"))
+				})
+			})
+		})
 	})
 })
