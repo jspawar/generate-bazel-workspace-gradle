@@ -128,6 +128,12 @@ func UnmarshalPOM(contents []byte) (*Artifact, error) {
 		}
 	}
 
+	// add POM properties to list of Maven properties
+	pom.Properties.Values = append(pom.Properties.Values, Property{
+		XMLName: xml.Name{Local: "project.version"},
+		Value: pom.Version,
+	})
+
 	// interpolate Maven properties for Versions
 	for _, dep := range pom.Dependencies {
 		interpolatedVersion, err := pom.InterpolateFromProperties(dep.Version)
