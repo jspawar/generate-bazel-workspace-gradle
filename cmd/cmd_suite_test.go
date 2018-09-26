@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	"github.com/onsi/gomega/format"
 )
 
 var (
@@ -19,6 +20,8 @@ func TestCmd(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	format.TruncatedDiff = false
+
 	bin, err = gexec.Build("github.com/jspawar/generate-bazel-workspace-gradle")
 	Expect(err).ToNot(HaveOccurred())
 })

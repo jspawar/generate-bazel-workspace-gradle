@@ -74,6 +74,8 @@ func (a *Artifact) GetBazelRule() string {
 	return fmt.Sprintf("%s_%s", groupID, artifactID)
 }
 
+// TODO: conform to spec for interpolation: http://maven.apache.org/ref/current/maven-model-builder/
+// TODO: up to what version of spec above to not conform to?
 func (a *Artifact) InterpolateFromProperties(interpolate string) (string, error) {
 	ms := propertyRegex.FindStringSubmatch(interpolate)
 	if len(ms) > 1 {

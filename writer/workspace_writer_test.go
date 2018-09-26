@@ -13,13 +13,13 @@ import (
 
 var _ = Describe("WorkspaceWriter", func() {
 	var (
-		err error
+		err    error
 		writer *WorkspaceWriter
-		artifacts []maven.Artifact
+		pom    *maven.Artifact
 	)
 
 	JustBeforeEach(func() {
-		err = writer.Write(artifacts)
+		err = writer.Write(pom)
 	})
 
 	Context("writing to a bytes buffer", func() {
@@ -38,12 +38,12 @@ var _ = Describe("WorkspaceWriter", func() {
 
 		Context("given an artifact with no dependencies", func() {
 			BeforeEach(func() {
-				artifacts = []maven.Artifact{{
-					GroupID: "org.fake",
+				pom = &maven.Artifact{
+					GroupID:    "org.fake",
 					ArtifactID: "some-artifact",
-					Version: "0.0.1",
+					Version:    "0.0.1",
 					Repository: "http://localhost/",
-				}}
+				}
 			})
 
 			It("should write Bazel rules for just that artifact", func() {
@@ -78,18 +78,18 @@ def generated_java_libraries():
 
 		Context("given an artifact with dependencies", func() {
 			BeforeEach(func() {
-				artifacts = []maven.Artifact{{
-					GroupID: "org.fake",
+				pom = &maven.Artifact{
+					GroupID:    "org.fake",
 					ArtifactID: "some-artifact",
-					Version: "0.0.1",
+					Version:    "0.0.1",
 					Repository: "http://localhost/",
 					Dependencies: []*maven.Artifact{{
-						GroupID: "fake.org",
+						GroupID:    "fake.org",
 						ArtifactID: "another-artifact",
-						Version: "2.0.3",
+						Version:    "2.0.3",
 						Repository: "http://localhost/",
 					}},
-				}}
+				}
 			})
 
 			It("should write Bazel rules for that artifact AND all of its dependencies", func() {
@@ -141,7 +141,7 @@ def generated_java_libraries():
 
 	Context("writing to a file", func() {
 		var (
-			out *os.File
+			out         *os.File
 			outContents []byte
 		)
 
@@ -166,12 +166,12 @@ def generated_java_libraries():
 
 		Context("given an artifact with no dependencies", func() {
 			BeforeEach(func() {
-				artifacts = []maven.Artifact{{
-					GroupID: "org.fake",
+				pom = &maven.Artifact{
+					GroupID:    "org.fake",
 					ArtifactID: "some-artifact",
-					Version: "0.0.1",
+					Version:    "0.0.1",
 					Repository: "http://localhost/",
-				}}
+				}
 			})
 
 			It("should write Bazel rules for just that artifact", func() {
@@ -205,18 +205,18 @@ def generated_java_libraries():
 
 		Context("given an artifact with dependencies", func() {
 			BeforeEach(func() {
-				artifacts = []maven.Artifact{{
-					GroupID: "org.fake",
+				pom = &maven.Artifact{
+					GroupID:    "org.fake",
 					ArtifactID: "some-artifact",
-					Version: "0.0.1",
+					Version:    "0.0.1",
 					Repository: "http://localhost/",
 					Dependencies: []*maven.Artifact{{
-						GroupID: "fake.org",
+						GroupID:    "fake.org",
 						ArtifactID: "another-artifact",
-						Version: "2.0.3",
+						Version:    "2.0.3",
 						Repository: "http://localhost/",
 					}},
-				}}
+				}
 			})
 
 			It("should write Bazel rules for that artifact AND all of its dependencies", func() {

@@ -17,7 +17,7 @@ var _ = Describe("DependencyWalker", func() {
 		remoteRepository *mavenfakes.FakeRemoteRepository
 		walker           *DependencyWalker
 		pom              *Artifact
-		deps             []Artifact
+		returnedPom      *Artifact
 	)
 
 	BeforeEach(func() {
@@ -39,7 +39,7 @@ var _ = Describe("DependencyWalker", func() {
 
 	JustBeforeEach(func() {
 		walker = &DependencyWalker{Repositories: repositories, RemoteRepository: remoteRepository}
-		deps, err = walker.TraversePOM(pom)
+		returnedPom, err = walker.TraversePOM(pom)
 	})
 
 	Context("Given a single repository search", func() {
@@ -54,20 +54,21 @@ var _ = Describe("DependencyWalker", func() {
 			It("should return all transitive dependencies without error", func() {
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(deps).ToNot(BeEmpty())
-				Expect(deps).To(ConsistOf(MatchFields(IgnoreExtras, Fields{
-					"GroupID":    Equal("org.hamcrest"),
-					"ArtifactID": Equal("hamcrest-core"),
-					"Version":    Equal("1.1"),
-					"Scope":      Equal("compile"),
-					"Repository": Equal(repositories[0]),
-				}), MatchFields(IgnoreExtras, Fields{
+				Expect(returnedPom).ToNot(BeNil())
+				Expect(returnedPom).To(PointTo(MatchFields(IgnoreExtras, Fields{
 					"GroupID":    Equal("junit"),
 					"ArtifactID": Equal("junit"),
 					"Version":    Equal("4.9"),
 					"Scope":      BeEmpty(),
 					"Repository": Equal(repositories[0]),
 				})))
+				Expect(returnedPom.Dependencies).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
+					"GroupID":    Equal("org.hamcrest"),
+					"ArtifactID": Equal("hamcrest-core"),
+					"Version":    Equal("1.1"),
+					"Scope":      Equal("compile"),
+					"Repository": Equal(repositories[0]),
+				}))))
 			})
 		})
 
@@ -102,14 +103,15 @@ var _ = Describe("DependencyWalker", func() {
 			It("should not duplicate in result", func() {
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(deps).ToNot(BeEmpty())
-				Expect(deps).To(ConsistOf(MatchFields(IgnoreExtras, Fields{
+				Expect(returnedPom).ToNot(BeNil())
+				Expect(returnedPom).To(PointTo(MatchFields(IgnoreExtras, Fields{
 					"GroupID":    Equal("junit"),
 					"ArtifactID": Equal("junit"),
 					"Version":    Equal("4.9"),
 					"Scope":      BeEmpty(),
 					"Repository": Equal(repositories[0]),
 				})))
+				Expect(returnedPom.Dependencies).To(BeEmpty())
 			})
 		})
 	})

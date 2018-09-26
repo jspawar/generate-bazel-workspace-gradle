@@ -17,7 +17,7 @@ type DependencyWalker struct {
 	cache        map[string]string
 }
 
-func (w *DependencyWalker) TraversePOM(pom *Artifact) ([]Artifact, error) {
+func (w *DependencyWalker) TraversePOM(pom *Artifact) (*Artifact, error) {
 	repository := w.Repositories[0]
 
 	logger.Debugf("Searching for POM in repository : %s", repository)
@@ -31,27 +31,28 @@ func (w *DependencyWalker) TraversePOM(pom *Artifact) ([]Artifact, error) {
 
 	// initialize cache
 	pom.Repository = repository
-	deps := []Artifact{*pom}
-	w.cache = map[string]string{deps[0].GetMavenCoords(): repository}
+	deps := make([]*Artifact, 0)
+	w.cache = map[string]string{pom.GetMavenCoords(): repository}
 
 	logger.Debug("Traversing dependencies...")
 	for _, dep := range pom.Dependencies {
 		logger.Debugf("Traversing dependency : %s", dep.GetMavenCoords())
-		traversedDeps, err := w.traverseArtifact(*dep)
+		traversedDep, err := w.traverseArtifact(dep)
 		if err != nil {
 			return nil, errors.Wrapf(err,
 				"Failed to fetch POM [%s] from configured search repositories",
 				dep.GetMavenCoords())
 		}
-		if traversedDeps != nil {
-			deps = append(deps, traversedDeps...)
+		if traversedDep != nil {
+			deps = append(deps, traversedDep)
 		}
 	}
+	pom.Dependencies = deps
 
-	return deps, nil
+	return pom, nil
 }
 
-func (w *DependencyWalker) traverseArtifact(artifact Artifact) ([]Artifact, error) {
+func (w *DependencyWalker) traverseArtifact(artifact *Artifact) (*Artifact, error) {
 	// check cache to avoid unnecessary traversal
 	if _, isCached := w.cache[artifact.GetMavenCoords()]; isCached {
 		logger.Debugf("Artifact already discovered : %s", artifact.GetMavenCoords())
@@ -61,25 +62,25 @@ func (w *DependencyWalker) traverseArtifact(artifact Artifact) ([]Artifact, erro
 	repository := w.Repositories[0]
 
 	logger.Debugf("Searching for artifact [%s] in repository : %s", artifact.GetMavenCoords(), repository)
-	remoteArtifact, err := w.RemoteRepository.FetchRemoteArtifact(&artifact, repository)
+	remoteArtifact, err := w.RemoteRepository.FetchRemoteArtifact(artifact, repository)
 	if err != nil {
 		return nil, err
 	}
-	artifact = *remoteArtifact
+	artifact = remoteArtifact
 
 	// can safely add this artifact to result slice
 	w.cache[artifact.GetMavenCoords()] = repository
 	artifact.Repository = repository
-	deps := []Artifact{artifact}
+	deps := make([]*Artifact, 0)
 
 	for _, dep := range artifact.Dependencies {
-		traversedDeps, err := w.traverseArtifact(*dep)
+		traversedDep, err := w.traverseArtifact(dep)
 		if err != nil {
 			return nil, err
 		}
-		// TODO: add these to the input artifact's dependency list?
-		deps = append(deps, traversedDeps...)
+		deps = append(deps, traversedDep)
 	}
+	artifact.Dependencies = deps
 
-	return deps, nil
+	return artifact, nil
 }

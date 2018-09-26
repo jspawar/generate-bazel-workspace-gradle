@@ -9,7 +9,7 @@ import (
 const indent = `  `
 const mavenJarsBlockHeader = `def generated_maven_jars():`
 const javaLibsBlockHeader = `def generated_java_libraries():`
-const excludesDefintion = `excludes = native.existing_rules().keys()`
+const excludesDefinition = `excludes = native.existing_rules().keys()`
 const artifactDefinitionHeader = `if "%s" not in excludes:`
 const mavenJarRule = `native.maven_jar`
 const javaLibRule = `native.java_library`
@@ -22,33 +22,27 @@ func NewWorkspaceWriter(w io.Writer) *WorkspaceWriter {
 	return &WorkspaceWriter{out: w}
 }
 
-func (w *WorkspaceWriter) Write(artifacts []maven.Artifact) error {
+func (w *WorkspaceWriter) Write(artifact *maven.Artifact) error {
 	w.out.Write([]byte(mavenJarsBlockHeader))
 	w.out.Write([]byte("\n"))
 
-	w.writeWithIndents(1, []byte(excludesDefintion))
+	w.writeWithIndents(1, []byte(excludesDefinition))
 	w.writeWithIndents(0, []byte("\n\n"))
 
 	// write `maven_jar` rules
-	for _, a := range artifacts {
-		err := w.writeMavenJarRule(&a)
-		if err != nil {
-			return err
-		}
+	if err := w.writeMavenJarRule(artifact); err != nil {
+		return err
 	}
 
 	w.out.Write([]byte(javaLibsBlockHeader))
 	w.out.Write([]byte("\n"))
 
-	w.writeWithIndents(1, []byte(excludesDefintion))
+	w.writeWithIndents(1, []byte(excludesDefinition))
 	w.writeWithIndents(0, []byte("\n\n"))
 
 	// write `java_library` rules
-	for _, a := range artifacts {
-		err := w.writeJavaLibraryRule(&a)
-		if err != nil {
-			return err
-		}
+	if err := w.writeJavaLibraryRule(artifact); err != nil {
+		return err
 	}
 
 	return nil
