@@ -59,10 +59,12 @@ func (a *Artifact) IsValid() bool {
 	return a.GroupID != "" && a.ArtifactID != "" && a.Version != ""
 }
 
+// TODO: move validation logic out
 func (a *Artifact) SearchPath() (string, error) {
 	if !a.IsValid() {
 		return "", errors.New("invalid POM definition")
 	}
+	// TODO: return with leading forward slash?
 	return fmt.Sprintf("%s/%s/%s/%s-%s.pom",
 		strings.Replace(a.GroupID, ".", "/", -1), a.ArtifactID, a.Version, a.ArtifactID, a.Version),
 		nil
@@ -109,6 +111,7 @@ func UnmarshalPOM(contents []byte) (*Artifact, error) {
 		return nil, errors.Wrapf(err, "error parsing POM")
 	}
 
+	// TODO: move everything below, up to different layer
 	// read group ID from parent block if need be
 	if pom.GroupID == "" && pom.Parent != nil {
 		pom.GroupID = pom.Parent.GroupID

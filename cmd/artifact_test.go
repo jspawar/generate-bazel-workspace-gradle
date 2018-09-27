@@ -67,14 +67,14 @@ var _ = Describe("Artifact", func() {
     native.maven_jar(
         name = "junit_junit",
         artifact = "junit:junit:4.9",
-        repository = "https://repo.maven.apache.org/maven2/",
+        repository = "https://repo.maven.apache.org/maven2",
     )
 
   if "org_hamcrest_hamcrest_core" not in excludes:
     native.maven_jar(
         name = "org_hamcrest_hamcrest_core",
         artifact = "org.hamcrest:hamcrest-core:1.1",
-        repository = "https://repo.maven.apache.org/maven2/",
+        repository = "https://repo.maven.apache.org/maven2",
     )
 
 def generated_java_libraries():

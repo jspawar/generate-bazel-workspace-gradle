@@ -26,7 +26,7 @@ var artifactCmd = &cobra.Command{
 
 func init() {
 	artifactCmd.Flags().StringVarP(&searchRepositories, "repos", "r",
-		"https://repo.maven.apache.org/maven2/",
+		"https://repo.maven.apache.org/maven2",
 		"Maven repositories to search through. First match is used.")
 }
 
