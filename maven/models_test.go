@@ -5,16 +5,16 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
-	. "github.com/jspawar/generate-bazel-workspace-gradle/maven"
 	"encoding/xml"
+	. "github.com/jspawar/generate-bazel-workspace-gradle/maven"
 )
 
 var _ = Describe("Models", func() {
 	var (
-		err       error
+		err            error
 		artifactString string
-		pomString string
-		pom       *Artifact
+		pomString      string
+		pom            *Artifact
 	)
 
 	Context("Given an artifact definition as a string", func() {
@@ -180,7 +180,7 @@ var _ = Describe("Models", func() {
 					BeforeEach(func() {
 						pom = &Artifact{
 							ArtifactID: "bar",
-							Version: "12",
+							Version:    "12",
 							Parent: &Artifact{
 								GroupID: "foo",
 							},
@@ -195,7 +195,7 @@ var _ = Describe("Models", func() {
 				Context("with a parent and no version", func() {
 					BeforeEach(func() {
 						pom = &Artifact{
-							GroupID: "foo",
+							GroupID:    "foo",
 							ArtifactID: "bar",
 							Parent: &Artifact{
 								Version: "4.3",
@@ -221,9 +221,9 @@ var _ = Describe("Models", func() {
 				Context("and the expected property is present", func() {
 					BeforeEach(func() {
 						pom = &Artifact{
-							GroupID: "foo",
+							GroupID:    "foo",
 							ArtifactID: "bar",
-							Version: "${expected.property}",
+							Version:    "${expected.property}",
 							Properties: Properties{Values: []Property{
 								{XMLName: xml.Name{Local: "expected.property"}, Value: "6.7"},
 							}},

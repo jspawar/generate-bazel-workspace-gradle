@@ -1,27 +1,26 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"strings"
-	"github.com/jspawar/generate-bazel-workspace-gradle/maven"
 	_ "github.com/jspawar/generate-bazel-workspace-gradle/logging"
+	"github.com/jspawar/generate-bazel-workspace-gradle/maven"
+	"github.com/jspawar/generate-bazel-workspace-gradle/writer"
+	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
-	"github.com/jspawar/generate-bazel-workspace-gradle/writer"
+	"strings"
 )
 
-const artifactLongHelp =
-``
+const artifactLongHelp = ``
 
 var (
 	searchRepositories string
 )
 
 var artifactCmd = &cobra.Command{
-	Use: "artifact",
+	Use:   "artifact",
 	Short: `Generates Bazel workspace files from a single Maven artifact and its transitive dependencies`,
-	Long: artifactLongHelp,
-	Run: artifactRunner,
+	Long:  artifactLongHelp,
+	Run:   artifactRunner,
 }
 
 func init() {
@@ -39,7 +38,7 @@ func artifactRunner(cmd *cobra.Command, args []string) {
 	artifactPom := maven.NewArtifact(args[0])
 	searchRepositories = strings.Replace(searchRepositories, ", ", ",", -1)
 	depWalker := &maven.DependencyWalker{
-		Repositories: strings.Split(searchRepositories, ","),
+		Repositories:     strings.Split(searchRepositories, ","),
 		RemoteRepository: maven.NewRemoteRepository(),
 	}
 

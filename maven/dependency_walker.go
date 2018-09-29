@@ -13,8 +13,8 @@ var (
 // TODO: refactor this to instead have an array of `RemoteRepository` instances which are constructed with the actual remote's URL
 type DependencyWalker struct {
 	Repositories []string
-	RemoteRepository
 	cache        map[string]string
+	RemoteRepository
 }
 
 func (w *DependencyWalker) TraversePOM(pom *Artifact) (*Artifact, error) {

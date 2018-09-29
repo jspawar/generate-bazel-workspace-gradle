@@ -1,11 +1,11 @@
 package maven
 
 import (
-	"net/http"
-	"github.com/pkg/errors"
-	"fmt"
-	"io/ioutil"
 	"encoding/xml"
+	"fmt"
+	"github.com/pkg/errors"
+	"io/ioutil"
+	"net/http"
 )
 
 //go:generate counterfeiter . RemoteRepository
@@ -13,7 +13,7 @@ type RemoteRepository interface {
 	FetchRemoteArtifact(artifact *Artifact, remoteRepository string) (*Artifact, error)
 }
 
-type remoteRepository struct {}
+type remoteRepository struct{}
 
 func NewRemoteRepository() RemoteRepository {
 	return &remoteRepository{}

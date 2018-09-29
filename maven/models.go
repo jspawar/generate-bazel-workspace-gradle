@@ -1,13 +1,13 @@
 package maven
 
 import (
-	"fmt"
-	"strings"
-	"encoding/xml"
 	"bytes"
+	"encoding/xml"
+	"fmt"
+	"github.com/pkg/errors"
 	"golang.org/x/net/html/charset"
 	"regexp"
-	"github.com/pkg/errors"
+	"strings"
 )
 
 var propertyRegex = regexp.MustCompile(`^\${(.*)}$`)

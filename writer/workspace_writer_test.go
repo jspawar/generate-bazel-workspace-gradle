@@ -4,11 +4,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/jspawar/generate-bazel-workspace-gradle/writer"
 	"github.com/jspawar/generate-bazel-workspace-gradle/maven"
+	. "github.com/jspawar/generate-bazel-workspace-gradle/writer"
 	"github.com/onsi/gomega/gbytes"
-	"os"
 	"io/ioutil"
+	"os"
 )
 
 var _ = Describe("WorkspaceWriter", func() {

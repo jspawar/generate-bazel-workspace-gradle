@@ -5,9 +5,9 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
+	"encoding/xml"
 	. "github.com/jspawar/generate-bazel-workspace-gradle/maven"
 	"net/http/httptest"
-	"encoding/xml"
 )
 
 var _ = Describe("RemoteRepository", func() {
@@ -122,9 +122,9 @@ var _ = Describe("RemoteRepository", func() {
 						toLookup.Version = mockResponse.Version
 
 						mockResponse.Parent = &Artifact{
-							GroupID: "foo",
+							GroupID:    "foo",
 							ArtifactID: "parent",
-							Version: "1.0.1",
+							Version:    "1.0.1",
 						}
 					})
 
@@ -192,9 +192,9 @@ var _ = Describe("RemoteRepository", func() {
 						}}
 
 						mockResponse.Parent = &Artifact{
-							GroupID: "foo",
+							GroupID:    "foo",
 							ArtifactID: "parent",
-							Version: "1.0.1",
+							Version:    "1.0.1",
 							Properties: Properties{Values: []Property{
 								{XMLName: xml.Name{Local: "maven.property"}, Value: "4.0.4"},
 							}},
@@ -230,13 +230,13 @@ var _ = Describe("RemoteRepository", func() {
 				BeforeEach(func() {
 					// TODO: need to refactor mock server to accept a list of artifacts to serve
 					mockResponse.Parent = &Artifact{
-						GroupID: "foo",
+						GroupID:    "foo",
 						ArtifactID: "bar",
-						Version: "5.0",
+						Version:    "5.0",
 						Parent: &Artifact{
-							GroupID: "baz",
+							GroupID:    "baz",
 							ArtifactID: "thing",
-							Version: "6.1",
+							Version:    "6.1",
 						},
 					}
 				})
@@ -251,16 +251,16 @@ var _ = Describe("RemoteRepository", func() {
 
 					Expect(remoteArtifact.Parent).ToNot(BeNil())
 					Expect(remoteArtifact.Parent).ToNot(PointTo(MatchFields(IgnoreExtras, Fields{
-						"GroupID": Equal("foo"),
+						"GroupID":    Equal("foo"),
 						"ArtifactID": Equal("bar"),
-						"Version": Equal("5.0"),
+						"Version":    Equal("5.0"),
 					})))
 
 					Expect(remoteArtifact.Parent.Parent).ToNot(BeNil())
 					Expect(remoteArtifact.Parent.Parent).ToNot(PointTo(MatchFields(IgnoreExtras, Fields{
-						"GroupID": Equal("baz"),
+						"GroupID":    Equal("baz"),
 						"ArtifactID": Equal("thing"),
-						"Version": Equal("6.1"),
+						"Version":    Equal("6.1"),
 					})))
 				})
 			})

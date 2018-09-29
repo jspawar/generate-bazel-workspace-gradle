@@ -1,9 +1,9 @@
 package writer
 
 import (
-	"io"
-	"github.com/jspawar/generate-bazel-workspace-gradle/maven"
 	"fmt"
+	"github.com/jspawar/generate-bazel-workspace-gradle/maven"
+	"io"
 )
 
 const indent = `  `
@@ -59,7 +59,7 @@ func (w *WorkspaceWriter) writeMavenJarRule(artifact *maven.Artifact) error {
 	w.writeWithIndents(1, []byte(fmt.Sprintf(artifactDefinitionHeader, artifact.GetBazelRule())))
 	w.writeWithIndents(0, []byte("\n"))
 
-	w.writeWithIndents(2, []byte(mavenJarRule + `(`))
+	w.writeWithIndents(2, []byte(mavenJarRule+`(`))
 
 	w.writeWithIndents(0, []byte("\n"))
 	w.writeWithIndents(4, []byte(fmt.Sprintf(`name = "%s",`, artifact.GetBazelRule())))
@@ -87,7 +87,7 @@ func (w *WorkspaceWriter) writeJavaLibraryRule(artifact *maven.Artifact) error {
 	w.writeWithIndents(1, []byte(fmt.Sprintf(artifactDefinitionHeader, artifact.GetBazelRule())))
 	w.writeWithIndents(0, []byte("\n"))
 
-	w.writeWithIndents(2, []byte(javaLibRule + `(`))
+	w.writeWithIndents(2, []byte(javaLibRule+`(`))
 
 	w.writeWithIndents(0, []byte("\n"))
 	w.writeWithIndents(4, []byte(fmt.Sprintf(`name = "%s",`, artifact.GetBazelRule())))

@@ -4,19 +4,19 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"os/exec"
 	"github.com/onsi/gomega/gexec"
-	"path/filepath"
-	"os"
 	"io/ioutil"
+	"os"
+	"os/exec"
+	"path/filepath"
 )
 
 var _ = Describe("Artifact", func() {
 	var (
-		args []string
+		args    []string
 		command *exec.Cmd
-		sess *gexec.Session
-		out []byte
+		sess    *gexec.Session
+		out     []byte
 	)
 
 	JustBeforeEach(func() {

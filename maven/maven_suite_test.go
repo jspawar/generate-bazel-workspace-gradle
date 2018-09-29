@@ -3,13 +3,13 @@ package maven_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	httptest "net/http/httptest"
-	"net/http"
 	"encoding/xml"
 	"github.com/jspawar/generate-bazel-workspace-gradle/maven"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
+	"net/http"
+	"net/http/httptest"
 )
 
 func TestMaven(t *testing.T) {
