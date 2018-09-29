@@ -67,11 +67,11 @@ func (r *remoteRepository) doFetch(artifact *Artifact, remoteRepository string) 
 
 	bs, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	remoteArtifact, err := UnmarshalPOM(bs)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	return remoteArtifact, nil
 }
