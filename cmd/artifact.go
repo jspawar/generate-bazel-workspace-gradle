@@ -45,7 +45,7 @@ func artifactRunner(cmd *cobra.Command, args []string) {
 
 	traversedPom, err := depWalker.TraversePOM(artifactPom)
 	if err != nil {
-		logger.Errorf("Failed to traverse POM [%s] : %s", artifactPom.GetMavenCoords(), err)
+		logger.Errorf("Failed to traverse artifact [%s] : %s", artifactPom.GetMavenCoords(), err)
 		panic(err)
 	}
 	for _, dep := range traversedPom.Dependencies {

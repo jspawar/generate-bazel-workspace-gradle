@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 	"fmt"
 	"io/ioutil"
+	"encoding/xml"
 )
 
 //go:generate counterfeiter . RemoteRepository
@@ -18,7 +19,6 @@ func NewRemoteRepository() RemoteRepository {
 	return &remoteRepository{}
 }
 
-// TODO: test drive this
 // TODO: fix assumption of no trailing "/" on repo URL
 func (r *remoteRepository) FetchRemoteArtifact(artifact *Artifact, remoteRepository string) (*Artifact, error) {
 	remoteArtifact, err := r.doFetch(artifact, remoteRepository)
@@ -26,33 +26,41 @@ func (r *remoteRepository) FetchRemoteArtifact(artifact *Artifact, remoteReposit
 		return nil, err
 	}
 
-	// fetch parent if present
-	if artifact.Parent != nil {
-		remoteParent, err := r.doFetch(artifact.Parent, remoteRepository)
+	// inheritance assembly
+	r.doInherit(remoteArtifact)
+
+	// parent resolution
+	if remoteArtifact.Parent != nil {
+		remoteParent, err := r.FetchRemoteArtifact(remoteArtifact.Parent, remoteRepository)
 		if err != nil {
 			return nil, err
 		}
 		remoteArtifact.Parent = remoteParent
 	}
 
+	// model interpolation
+	if err := r.doInterpolation(remoteArtifact); err != nil {
+		return nil, err
+	}
+
+	// TODO: validate here or in separate place? also, delegate validation to validation class?
+	if !remoteArtifact.IsValid() {
+		return nil, errors.Errorf("error parsing POM [%s] : invalid POM definition", remoteArtifact.GetMavenCoords())
+	}
+
 	return remoteArtifact, nil
 }
 
 func (r *remoteRepository) doFetch(artifact *Artifact, remoteRepository string) (*Artifact, error) {
-	searchPath, err := artifact.SearchPath()
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := http.Get(fmt.Sprintf("%s/%s", remoteRepository, searchPath))
+	res, err := http.Get(fmt.Sprintf("%s/%s", remoteRepository, artifact.SearchPath()))
 	if err != nil {
 		return nil, errors.Wrapf(err,
-			"failed to fetch POM [%s] from configured search repositories",
+			"failed to find POM [%s] in configured search repositories",
 			artifact.GetMavenCoords())
 	}
 	if res.StatusCode != 200 {
 		return nil, errors.New(fmt.Sprintf(
-			"failed to fetch POM [%s] from configured search repositories",
+			"failed to find POM [%s] in configured search repositories",
 			artifact.GetMavenCoords()))
 	}
 	defer res.Body.Close()
@@ -66,4 +74,32 @@ func (r *remoteRepository) doFetch(artifact *Artifact, remoteRepository string) 
 		panic(err)
 	}
 	return remoteArtifact, nil
+}
+
+func (r *remoteRepository) doInherit(artifact *Artifact) {
+	artifact.InterpolateFromParent()
+	artifact.Properties.Values = append(artifact.Properties.Values, Property{
+		XMLName: xml.Name{Local: "project.version"},
+		Value:   artifact.Version,
+	})
+}
+
+func (r *remoteRepository) doInterpolation(artifact *Artifact) error {
+	// read parent Maven properties if need be
+	if artifact.Parent != nil && artifact.Parent.Properties.Values != nil && len(artifact.Parent.Properties.Values) > 0 {
+		if artifact.Properties.Values == nil {
+			artifact.Properties.Values = artifact.Parent.Properties.Values
+		} else {
+			artifact.Properties.Values = append(artifact.Properties.Values, artifact.Parent.Properties.Values...)
+		}
+	}
+	// interpolate
+	for _, dep := range artifact.Dependencies {
+		interpolatedVersion, err := artifact.InterpolateFromProperties(dep.Version)
+		if err != nil {
+			return err
+		}
+		dep.Version = interpolatedVersion
+	}
+	return nil
 }

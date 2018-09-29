@@ -59,21 +59,28 @@ func (a *Artifact) IsValid() bool {
 	return a.GroupID != "" && a.ArtifactID != "" && a.Version != ""
 }
 
-// TODO: move validation logic out
-func (a *Artifact) SearchPath() (string, error) {
-	if !a.IsValid() {
-		return "", errors.New("invalid POM definition")
-	}
+func (a *Artifact) SearchPath() string {
 	// TODO: return with leading forward slash?
 	return fmt.Sprintf("%s/%s/%s/%s-%s.pom",
-		strings.Replace(a.GroupID, ".", "/", -1), a.ArtifactID, a.Version, a.ArtifactID, a.Version),
-		nil
+		strings.Replace(a.GroupID, ".", "/", -1), a.ArtifactID, a.Version, a.ArtifactID, a.Version)
 }
 
 func (a *Artifact) GetBazelRule() string {
 	groupID := strings.Replace(a.GroupID, ".", "_", -1)
 	artifactID := strings.Replace(a.ArtifactID, "-", "_", -1)
 	return fmt.Sprintf("%s_%s", groupID, artifactID)
+}
+
+func (a *Artifact) InterpolateFromParent() {
+	// read group ID from parent block if need be
+	if a.GroupID == "" && a.Parent != nil {
+		a.GroupID = a.Parent.GroupID
+	}
+
+	// read version from parent block if need be
+	if a.Version == "" && a.Parent != nil {
+		a.Version = a.Parent.Version
+	}
 }
 
 // TODO: conform to spec for interpolation: http://maven.apache.org/ref/current/maven-model-builder/
@@ -110,46 +117,5 @@ func UnmarshalPOM(contents []byte) (*Artifact, error) {
 	if err := decoder.Decode(pom); err != nil {
 		return nil, errors.Wrapf(err, "error parsing POM")
 	}
-
-	// TODO: move everything below, up to different layer
-	// read group ID from parent block if need be
-	if pom.GroupID == "" && pom.Parent != nil {
-		pom.GroupID = pom.Parent.GroupID
-	}
-
-	// read version from parent block if need be
-	if pom.Version == "" && pom.Parent != nil {
-		pom.Version = pom.Parent.Version
-	}
-
-	// read parent Maven properties if need be
-	if pom.Parent != nil && pom.Parent.Properties.Values != nil && len(pom.Parent.Properties.Values) > 0 {
-		if pom.Properties.Values == nil {
-			pom.Properties.Values = pom.Parent.Properties.Values
-		} else {
-			pom.Properties.Values = append(pom.Properties.Values, pom.Parent.Properties.Values...)
-		}
-	}
-
-	// add POM properties to list of Maven properties
-	pom.Properties.Values = append(pom.Properties.Values, Property{
-		XMLName: xml.Name{Local: "project.version"},
-		Value: pom.Version,
-	})
-
-	// interpolate Maven properties for Versions
-	for _, dep := range pom.Dependencies {
-		interpolatedVersion, err := pom.InterpolateFromProperties(dep.Version)
-		if err != nil {
-			return nil, err
-		}
-		dep.Version = interpolatedVersion
-	}
-
-	// throw error if deserialized POM is invalid
-	if !pom.IsValid() {
-		return nil, errors.Errorf("error parsing POM [%s] : input POM was invalid", pom.GetMavenCoords())
-	}
-
 	return pom, nil
 }

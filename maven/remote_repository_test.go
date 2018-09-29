@@ -49,7 +49,7 @@ var _ = Describe("RemoteRepository", func() {
 
 		It("should return a meaningful error", func() {
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal("invalid POM definition"))
+			Expect(err.Error()).To(Equal("failed to find POM [org.fake:some-artifact:] in configured search repositories"))
 		})
 	})
 
@@ -78,40 +78,170 @@ var _ = Describe("RemoteRepository", func() {
 
 			It("should return a meaningful error", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal("failed to fetch POM [foo:bar:1] from configured search repositories"))
+				Expect(err.Error()).To(Equal("failed to find POM [foo:bar:1] in configured search repositories"))
 			})
 		})
 
 		Context("for an artifact that is present in one of the desired repositories", func() {
-			Context("without a parent", func() {
-				It("should return expected artifact without error", func() {
-					Expect(err).ToNot(HaveOccurred())
-					Expect(remoteArtifact).ToNot(BeNil())
+			Context("when remote POM is missing necessary tag(s)", func() {
+				BeforeEach(func() {
+					mockResponse.GroupID = ""
+					toLookup.GroupID = mockResponse.GroupID
+				})
 
-					Expect(remoteArtifact.GroupID).To(Equal(toLookup.GroupID))
-					Expect(remoteArtifact.ArtifactID).To(Equal(toLookup.ArtifactID))
-					Expect(remoteArtifact.Version).To(Equal(toLookup.Version))
+				It("should return a meaningful error", func() {
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(Equal("error parsing POM [:some-artifact:1.0.1] : invalid POM definition"))
 				})
 			})
 
-			Context("WITH a parent", func() {
+			Context("when remote POM depends on POM properties", func() {
+				Context("from itself", func() {
+					It("should return expected artifact, with POM properties, without error", func() {
+						Expect(err).ToNot(HaveOccurred())
+						Expect(remoteArtifact).ToNot(BeNil())
+
+						Expect(remoteArtifact.GroupID).To(Equal(toLookup.GroupID))
+						Expect(remoteArtifact.ArtifactID).To(Equal(toLookup.ArtifactID))
+						Expect(remoteArtifact.Version).To(Equal(toLookup.Version))
+
+						Expect(remoteArtifact.Properties).To(MatchFields(IgnoreExtras, Fields{
+							"Values": ContainElement(Property{
+								XMLName: xml.Name{Local: "project.version"},
+								Value:   "1.0.1",
+							}),
+						}))
+					})
+				})
+
+				Context("from parent", func() {
+					BeforeEach(func() {
+						mockResponse.GroupID = ""
+						mockResponse.Version = ""
+						toLookup.GroupID = mockResponse.GroupID
+						toLookup.Version = mockResponse.Version
+
+						mockResponse.Parent = &Artifact{
+							GroupID: "foo",
+							ArtifactID: "parent",
+							Version: "1.0.1",
+						}
+					})
+
+					It("should return expected artifact, with POM properties, without error", func() {
+						Expect(err).ToNot(HaveOccurred())
+						Expect(remoteArtifact).ToNot(BeNil())
+
+						Expect(remoteArtifact.GroupID).To(Equal("foo"))
+						Expect(remoteArtifact.ArtifactID).To(Equal(toLookup.ArtifactID))
+						Expect(remoteArtifact.Version).To(Equal("1.0.1"))
+
+						Expect(remoteArtifact.Properties).To(MatchFields(IgnoreExtras, Fields{
+							"Values": ContainElement(Property{
+								XMLName: xml.Name{Local: "project.version"},
+								Value:   "1.0.1",
+							}),
+						}))
+					})
+				})
+			})
+
+			Context("when remote POM depends on Maven properties", func() {
+				Context("from itself", func() {
+					BeforeEach(func() {
+						mockResponse.Dependencies = []*Artifact{{
+							GroupID:    "foo",
+							ArtifactID: "bar",
+							Version:    "${maven.property}",
+						}}
+						mockResponse.Properties = Properties{Values: []Property{
+							{XMLName: xml.Name{Local: "maven.property"}, Value: "3.0.2"},
+						}}
+					})
+
+					It("should return expected artifact, with Maven properties, without error", func() {
+						Expect(err).ToNot(HaveOccurred())
+						Expect(remoteArtifact).ToNot(BeNil())
+
+						Expect(remoteArtifact.GroupID).To(Equal(toLookup.GroupID))
+						Expect(remoteArtifact.ArtifactID).To(Equal(toLookup.ArtifactID))
+						Expect(remoteArtifact.Version).To(Equal(toLookup.Version))
+
+						Expect(remoteArtifact.Properties).To(MatchFields(IgnoreExtras, Fields{
+							"Values": ContainElement(Property{
+								XMLName: xml.Name{Local: "maven.property"},
+								Value:   "3.0.2",
+							}),
+						}))
+
+						Expect(remoteArtifact.Dependencies).ToNot(BeEmpty())
+						Expect(remoteArtifact.Dependencies).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
+							"GroupID":    Equal("foo"),
+							"ArtifactID": Equal("bar"),
+							"Version":    Equal("3.0.2"),
+						}))))
+					})
+				})
+
+				Context("from parent", func() {
+					BeforeEach(func() {
+						mockResponse.Dependencies = []*Artifact{{
+							GroupID:    "foo",
+							ArtifactID: "bar",
+							Version:    "${maven.property}",
+						}}
+
+						mockResponse.Parent = &Artifact{
+							GroupID: "foo",
+							ArtifactID: "parent",
+							Version: "1.0.1",
+							Properties: Properties{Values: []Property{
+								{XMLName: xml.Name{Local: "maven.property"}, Value: "4.0.4"},
+							}},
+						}
+					})
+
+					It("should return expected artifact, with Maven properties, without error", func() {
+						Expect(err).ToNot(HaveOccurred())
+						Expect(remoteArtifact).ToNot(BeNil())
+
+						Expect(remoteArtifact.GroupID).To(Equal(toLookup.GroupID))
+						Expect(remoteArtifact.ArtifactID).To(Equal(toLookup.ArtifactID))
+						Expect(remoteArtifact.Version).To(Equal(toLookup.Version))
+
+						Expect(remoteArtifact.Properties).To(MatchFields(IgnoreExtras, Fields{
+							"Values": ContainElement(Property{
+								XMLName: xml.Name{Local: "maven.property"},
+								Value:   "4.0.4",
+							}),
+						}))
+
+						Expect(remoteArtifact.Dependencies).ToNot(BeEmpty())
+						Expect(remoteArtifact.Dependencies).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
+							"GroupID":    Equal("foo"),
+							"ArtifactID": Equal("bar"),
+							"Version":    Equal("4.0.4"),
+						}))))
+					})
+				})
+			})
+
+			PContext("when remote POM has multiple levels of parents", func() {
 				BeforeEach(func() {
+					// TODO: need to refactor mock server to accept a list of artifacts to serve
 					mockResponse.Parent = &Artifact{
 						GroupID: "foo",
 						ArtifactID: "bar",
-						Version: "2",
-						Properties: Properties{
-							Values: []Property{{XMLName: xml.Name{Local: "parent.prop"}, Value: "val"}},
+						Version: "5.0",
+						Parent: &Artifact{
+							GroupID: "baz",
+							ArtifactID: "thing",
+							Version: "6.1",
 						},
-					}
-					toLookup.Parent = &Artifact{
-						GroupID: "foo",
-						ArtifactID: "bar",
-						Version: "2",
 					}
 				})
 
-				It("should return expected artifact without error", func() {
+				It("should return expected artifact, with all levels of parents contained, without error", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(remoteArtifact).ToNot(BeNil())
 
@@ -120,16 +250,29 @@ var _ = Describe("RemoteRepository", func() {
 					Expect(remoteArtifact.Version).To(Equal(toLookup.Version))
 
 					Expect(remoteArtifact.Parent).ToNot(BeNil())
-					Expect(remoteArtifact.Parent.GroupID).To(Equal("foo"))
-					Expect(remoteArtifact.Parent.ArtifactID).To(Equal("bar"))
-					Expect(remoteArtifact.Parent.Version).To(Equal("2"))
+					Expect(remoteArtifact.Parent).ToNot(PointTo(MatchFields(IgnoreExtras, Fields{
+						"GroupID": Equal("foo"),
+						"ArtifactID": Equal("bar"),
+						"Version": Equal("5.0"),
+					})))
 
-					Expect(remoteArtifact.Properties).To(MatchFields(IgnoreExtras, Fields{
-						"Values": ContainElement(Property{
-							XMLName: xml.Name{Local: "parent.prop"},
-							Value: "val",
-						}),
-					}))
+					Expect(remoteArtifact.Parent.Parent).ToNot(BeNil())
+					Expect(remoteArtifact.Parent.Parent).ToNot(PointTo(MatchFields(IgnoreExtras, Fields{
+						"GroupID": Equal("baz"),
+						"ArtifactID": Equal("thing"),
+						"Version": Equal("6.1"),
+					})))
+				})
+			})
+
+			Context("without any special context", func() {
+				It("should return expected artifact without error", func() {
+					Expect(err).ToNot(HaveOccurred())
+					Expect(remoteArtifact).ToNot(BeNil())
+
+					Expect(remoteArtifact.GroupID).To(Equal(toLookup.GroupID))
+					Expect(remoteArtifact.ArtifactID).To(Equal(toLookup.ArtifactID))
+					Expect(remoteArtifact.Version).To(Equal(toLookup.Version))
 				})
 			})
 		})
