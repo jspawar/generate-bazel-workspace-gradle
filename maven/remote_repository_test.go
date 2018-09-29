@@ -15,7 +15,7 @@ var _ = Describe("RemoteRepository", func() {
 		err            error
 		repo           RemoteRepository
 		mockServer     *httptest.Server
-		mockResponse   *Artifact
+		mockResponses  []Artifact
 		toLookup       *Artifact
 		remoteArtifact *Artifact
 	)
@@ -25,7 +25,7 @@ var _ = Describe("RemoteRepository", func() {
 	})
 
 	JustBeforeEach(func() {
-		mockServer = initMockServer(mockResponse)
+		mockServer = initMockServer(mockResponses)
 
 		remoteArtifact, err = repo.FetchRemoteArtifact(toLookup, mockServer.URL)
 	})
@@ -36,30 +36,30 @@ var _ = Describe("RemoteRepository", func() {
 
 	Context("given an invalid artifact query", func() {
 		BeforeEach(func() {
-			mockResponse = &Artifact{
+			mockResponses = []Artifact{{
 				GroupID:    "org.fake",
 				ArtifactID: "some-artifact",
 				Version:    "1.0.1",
-			}
+			}}
 			toLookup = &Artifact{
-				GroupID:    "org.fake",
-				ArtifactID: "some-artifact",
+				GroupID: "org.fake",
+				Version: "1.0",
 			}
 		})
 
 		It("should return a meaningful error", func() {
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal("failed to find POM [org.fake:some-artifact:] in configured search repositories"))
+			Expect(err.Error()).To(Equal("failed to find POM [org.fake::1.0] in configured search repositories"))
 		})
 	})
 
 	Context("given a valid artifact query", func() {
 		BeforeEach(func() {
-			mockResponse = &Artifact{
+			mockResponses = []Artifact{{
 				GroupID:    "org.fake",
 				ArtifactID: "some-artifact",
 				Version:    "1.0.1",
-			}
+			}}
 			toLookup = &Artifact{
 				GroupID:    "org.fake",
 				ArtifactID: "some-artifact",
@@ -85,8 +85,8 @@ var _ = Describe("RemoteRepository", func() {
 		Context("for an artifact that is present in one of the desired repositories", func() {
 			Context("when remote POM is missing necessary tag(s)", func() {
 				BeforeEach(func() {
-					mockResponse.GroupID = ""
-					toLookup.GroupID = mockResponse.GroupID
+					mockResponses[0].GroupID = ""
+					toLookup.GroupID = mockResponses[0].GroupID
 				})
 
 				It("should return a meaningful error", func() {
@@ -116,16 +116,17 @@ var _ = Describe("RemoteRepository", func() {
 
 				Context("from parent", func() {
 					BeforeEach(func() {
-						mockResponse.GroupID = ""
-						mockResponse.Version = ""
-						toLookup.GroupID = mockResponse.GroupID
-						toLookup.Version = mockResponse.Version
+						mockResponses[0].GroupID = ""
+						mockResponses[0].Version = ""
+						toLookup.GroupID = mockResponses[0].GroupID
+						toLookup.Version = mockResponses[0].Version
 
-						mockResponse.Parent = &Artifact{
+						mockResponses[0].Parent = &Artifact{
 							GroupID:    "foo",
 							ArtifactID: "parent",
 							Version:    "1.0.1",
 						}
+						mockResponses = append(mockResponses, *mockResponses[0].Parent)
 					})
 
 					It("should return expected artifact, with POM properties, without error", func() {
@@ -149,12 +150,12 @@ var _ = Describe("RemoteRepository", func() {
 			Context("when remote POM depends on Maven properties", func() {
 				Context("from itself", func() {
 					BeforeEach(func() {
-						mockResponse.Dependencies = []*Artifact{{
+						mockResponses[0].Dependencies = []*Artifact{{
 							GroupID:    "foo",
 							ArtifactID: "bar",
 							Version:    "${maven.property}",
 						}}
-						mockResponse.Properties = Properties{Values: []Property{
+						mockResponses[0].Properties = Properties{Values: []Property{
 							{XMLName: xml.Name{Local: "maven.property"}, Value: "3.0.2"},
 						}}
 					})
@@ -185,13 +186,12 @@ var _ = Describe("RemoteRepository", func() {
 
 				Context("from parent", func() {
 					BeforeEach(func() {
-						mockResponse.Dependencies = []*Artifact{{
+						mockResponses[0].Dependencies = []*Artifact{{
 							GroupID:    "foo",
 							ArtifactID: "bar",
 							Version:    "${maven.property}",
 						}}
-
-						mockResponse.Parent = &Artifact{
+						mockResponses[0].Parent = &Artifact{
 							GroupID:    "foo",
 							ArtifactID: "parent",
 							Version:    "1.0.1",
@@ -199,6 +199,8 @@ var _ = Describe("RemoteRepository", func() {
 								{XMLName: xml.Name{Local: "maven.property"}, Value: "4.0.4"},
 							}},
 						}
+
+						mockResponses = append(mockResponses, *mockResponses[0].Parent)
 					})
 
 					It("should return expected artifact, with Maven properties, without error", func() {
@@ -226,10 +228,9 @@ var _ = Describe("RemoteRepository", func() {
 				})
 			})
 
-			PContext("when remote POM has multiple levels of parents", func() {
+			Context("when remote POM has multiple levels of parents", func() {
 				BeforeEach(func() {
-					// TODO: need to refactor mock server to accept a list of artifacts to serve
-					mockResponse.Parent = &Artifact{
+					mockResponses[0].Parent = &Artifact{
 						GroupID:    "foo",
 						ArtifactID: "bar",
 						Version:    "5.0",
@@ -237,8 +238,16 @@ var _ = Describe("RemoteRepository", func() {
 							GroupID:    "baz",
 							ArtifactID: "thing",
 							Version:    "6.1",
+							Parent: &Artifact{
+								GroupID:    "third",
+								ArtifactID: "level",
+								Version:    "3.3.3",
+							},
 						},
 					}
+					mockResponses = append(mockResponses, *mockResponses[0].Parent)
+					mockResponses = append(mockResponses, *mockResponses[0].Parent.Parent)
+					mockResponses = append(mockResponses, *mockResponses[0].Parent.Parent.Parent)
 				})
 
 				It("should return expected artifact, with all levels of parents contained, without error", func() {
@@ -250,17 +259,24 @@ var _ = Describe("RemoteRepository", func() {
 					Expect(remoteArtifact.Version).To(Equal(toLookup.Version))
 
 					Expect(remoteArtifact.Parent).ToNot(BeNil())
-					Expect(remoteArtifact.Parent).ToNot(PointTo(MatchFields(IgnoreExtras, Fields{
+					Expect(remoteArtifact.Parent).To(PointTo(MatchFields(IgnoreExtras, Fields{
 						"GroupID":    Equal("foo"),
 						"ArtifactID": Equal("bar"),
 						"Version":    Equal("5.0"),
 					})))
 
 					Expect(remoteArtifact.Parent.Parent).ToNot(BeNil())
-					Expect(remoteArtifact.Parent.Parent).ToNot(PointTo(MatchFields(IgnoreExtras, Fields{
+					Expect(remoteArtifact.Parent.Parent).To(PointTo(MatchFields(IgnoreExtras, Fields{
 						"GroupID":    Equal("baz"),
 						"ArtifactID": Equal("thing"),
 						"Version":    Equal("6.1"),
+					})))
+
+					Expect(remoteArtifact.Parent.Parent.Parent).ToNot(BeNil())
+					Expect(remoteArtifact.Parent.Parent.Parent).To(PointTo(MatchFields(IgnoreExtras, Fields{
+						"GroupID":    Equal("third"),
+						"ArtifactID": Equal("level"),
+						"Version":    Equal("3.3.3"),
 					})))
 				})
 			})

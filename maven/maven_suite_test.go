@@ -21,41 +21,32 @@ var _ = BeforeSuite(func() {
 	format.TruncatedDiff = false
 })
 
-func initMockServer(mockResponse *maven.Artifact) *httptest.Server {
+func initMockServer(mocks []maven.Artifact) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		res := mockResponse
-
-		// return "not found" if mock response not configured
-		if mockResponse == nil {
+		if mocks == nil || len(mocks) < 1 {
 			w.WriteHeader(404)
 			return
 		}
-		// return "not found" if request doesn't match with mock response or its parent
-		p := mockResponse.SearchPath()
-		if mockResponse.Parent == nil {
-			if "/"+p != r.URL.Path {
-				w.WriteHeader(404)
+
+		// serve all input mock responses
+		for _, a := range mocks {
+			p := a.SearchPath()
+			if "/"+p == r.URL.Path {
+				// serialize POM object and return
+				bs, err := xml.Marshal(a)
+				if err != nil {
+					w.WriteHeader(500)
+					return
+				}
+				if _, err := w.Write(bs); err != nil {
+					w.WriteHeader(500)
+				}
+				w.Header().Add("Content-Type", "text/xml")
 				return
-			}
-		} else {
-			pp := mockResponse.Parent.SearchPath()
-			if "/"+p != r.URL.Path && "/"+pp != r.URL.Path {
-				w.WriteHeader(404)
-				return
-			} else if "/"+pp == r.URL.Path {
-				res = mockResponse.Parent
 			}
 		}
 
-		// serialize POM object and return
-		bs, err := xml.Marshal(res)
-		if err != nil {
-			w.WriteHeader(500)
-			return
-		}
-		if _, err := w.Write(bs); err != nil {
-			w.WriteHeader(500)
-		}
-		w.Header().Add("Content-Type", "text/xml")
+		// else request doesn't match configured mocks
+		w.WriteHeader(404)
 	}))
 }
