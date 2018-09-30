@@ -13,6 +13,7 @@ type Metadata struct {
 	ArtifactID string `xml:"artifactId"`
 	Latest     string `xml:"versioning>latest"`
 	Release    string `xml:"versioning>release"`
+	Version    string `xml:"version"`
 }
 
 func UnmarshalMetadata(contents []byte) (*Metadata, error) {

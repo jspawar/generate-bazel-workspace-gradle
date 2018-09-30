@@ -16,6 +16,7 @@ var _ = Describe("RemoteRepository", func() {
 		repo           RemoteRepository
 		mockServer     *httptest.Server
 		mockResponses  []Artifact
+		mockMetadata   []Metadata
 		toLookup       *Artifact
 		remoteArtifact *Artifact
 	)
@@ -25,7 +26,7 @@ var _ = Describe("RemoteRepository", func() {
 	})
 
 	JustBeforeEach(func() {
-		mockServer = initMockServer(mockResponses)
+		mockServer = initMockServer(mockResponses, mockMetadata...)
 
 		remoteArtifact, err = repo.FetchRemoteArtifact(toLookup, mockServer.URL)
 	})
@@ -117,9 +118,7 @@ var _ = Describe("RemoteRepository", func() {
 				Context("from parent", func() {
 					BeforeEach(func() {
 						mockResponses[0].GroupID = ""
-						mockResponses[0].Version = ""
 						toLookup.GroupID = mockResponses[0].GroupID
-						toLookup.Version = mockResponses[0].Version
 
 						mockResponses[0].Parent = &Artifact{
 							GroupID:    "foo",
@@ -135,7 +134,7 @@ var _ = Describe("RemoteRepository", func() {
 
 						Expect(remoteArtifact.GroupID).To(Equal("foo"))
 						Expect(remoteArtifact.ArtifactID).To(Equal(toLookup.ArtifactID))
-						Expect(remoteArtifact.Version).To(Equal("1.0.1"))
+						Expect(remoteArtifact.Version).To(Equal(toLookup.Version))
 
 						Expect(remoteArtifact.Properties).To(MatchFields(IgnoreExtras, Fields{
 							"Values": ContainElement(Property{
@@ -226,6 +225,106 @@ var _ = Describe("RemoteRepository", func() {
 						}))))
 					})
 				})
+
+				Context("from parent of parent", func() {
+					BeforeEach(func() {
+						mockResponses[0].Dependencies = []*Artifact{{
+							GroupID:    "foo",
+							ArtifactID: "bar",
+							Version:    "${parent.parent.property}",
+						}}
+						mockResponses[0].Parent = &Artifact{
+							GroupID:    "foo",
+							ArtifactID: "parent",
+							Version:    "1.0.1",
+							Properties: Properties{Values: []Property{
+								{XMLName: xml.Name{Local: "parent.property"}, Value: "4.0.4"},
+							}},
+						}
+						mockResponses[0].Parent.Parent = &Artifact{
+							GroupID:    "bar",
+							ArtifactID: "parent-parent",
+							Version:    "1.0.1",
+							Properties: Properties{Values: []Property{
+								{XMLName: xml.Name{Local: "parent.parent.property"}, Value: "5.0.4"},
+							}},
+						}
+
+						mockResponses = append(mockResponses, *mockResponses[0].Parent)
+						mockResponses = append(mockResponses, *mockResponses[0].Parent.Parent)
+					})
+
+					It("should return expected artifact, with Maven properties, without error", func() {
+						Expect(err).ToNot(HaveOccurred())
+						Expect(remoteArtifact).ToNot(BeNil())
+
+						Expect(remoteArtifact.GroupID).To(Equal(toLookup.GroupID))
+						Expect(remoteArtifact.ArtifactID).To(Equal(toLookup.ArtifactID))
+						Expect(remoteArtifact.Version).To(Equal(toLookup.Version))
+
+						Expect(remoteArtifact.Properties).To(MatchFields(IgnoreExtras, Fields{
+							"Values": ContainElement(Property{
+								XMLName: xml.Name{Local: "parent.property"},
+								Value:   "4.0.4",
+							}),
+						}))
+						Expect(remoteArtifact.Properties).To(MatchFields(IgnoreExtras, Fields{
+							"Values": ContainElement(Property{
+								XMLName: xml.Name{Local: "parent.parent.property"},
+								Value:   "5.0.4",
+							}),
+						}))
+
+						Expect(remoteArtifact.Dependencies).ToNot(BeEmpty())
+						Expect(remoteArtifact.Dependencies).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
+							"GroupID":    Equal("foo"),
+							"ArtifactID": Equal("bar"),
+							"Version":    Equal("5.0.4"),
+						}))))
+					})
+				})
+
+				PContext("that depends on the value of another property", func() {
+					BeforeEach(func() {
+						mockResponses[0].Dependencies = []*Artifact{{
+							GroupID:    "foo",
+							ArtifactID: "bar",
+							Version:    "${maven.property}",
+						}}
+						mockResponses[0].Properties.Values = append(mockResponses[0].Properties.Values, Property{
+							XMLName: xml.Name{Local: "maven.property"},
+							Value:   "another.property",
+						}, Property{
+							XMLName: xml.Name{Local: "another.property"},
+							Value:   "15",
+						})
+
+						mockResponses = append(mockResponses, *mockResponses[0].Parent)
+					})
+
+					It("should return expected artifact, with Maven properties, without error", func() {
+						Expect(err).ToNot(HaveOccurred())
+						Expect(remoteArtifact).ToNot(BeNil())
+
+						Expect(remoteArtifact.GroupID).To(Equal(toLookup.GroupID))
+						Expect(remoteArtifact.ArtifactID).To(Equal(toLookup.ArtifactID))
+						Expect(remoteArtifact.Version).To(Equal(toLookup.Version))
+
+						Expect(remoteArtifact.Properties).To(MatchFields(IgnoreExtras, Fields{
+							"Values": ContainElement(Property{
+								XMLName: xml.Name{Local: "maven.property"},
+								Value:   "15",
+							}),
+						}))
+
+						Expect(remoteArtifact.Dependencies).ToNot(BeEmpty())
+						Expect(remoteArtifact.Dependencies).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
+							"GroupID":    Equal("foo"),
+							"ArtifactID": Equal("bar"),
+							"Version":    Equal("15"),
+						}))))
+					})
+				})
 			})
 
 			Context("when remote POM has multiple levels of parents", func() {
@@ -289,6 +388,28 @@ var _ = Describe("RemoteRepository", func() {
 					Expect(remoteArtifact.GroupID).To(Equal(toLookup.GroupID))
 					Expect(remoteArtifact.ArtifactID).To(Equal(toLookup.ArtifactID))
 					Expect(remoteArtifact.Version).To(Equal(toLookup.Version))
+				})
+			})
+
+			Context("when version is not specified in request", func() {
+				BeforeEach(func() {
+					mockResponses[0].Version = "22"
+					toLookup.Version = ""
+
+					mockMetadata = []Metadata{{
+						GroupID:    toLookup.GroupID,
+						ArtifactID: toLookup.ArtifactID,
+						Latest:     mockResponses[0].Version,
+					}}
+				})
+
+				It("should return latest version of expected artifact without error", func() {
+					Expect(err).ToNot(HaveOccurred())
+					Expect(remoteArtifact).ToNot(BeNil())
+
+					Expect(remoteArtifact.GroupID).To(Equal(toLookup.GroupID))
+					Expect(remoteArtifact.ArtifactID).To(Equal(toLookup.ArtifactID))
+					Expect(remoteArtifact.Version).To(Equal(mockResponses[0].Version))
 				})
 			})
 		})

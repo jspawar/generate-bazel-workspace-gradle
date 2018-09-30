@@ -237,5 +237,26 @@ var _ = Describe("Models", func() {
 				})
 			})
 		})
+
+		Context("to construct a metadata path for", func() {
+			var metadataPath string
+
+			BeforeEach(func() {
+				pom = &Artifact{
+					GroupID:    "foo.bar",
+					ArtifactID: "thing",
+				}
+			})
+
+			JustBeforeEach(func() {
+				metadataPath = pom.MetadataPath()
+			})
+
+			It("should return an expected metadata path", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(metadataPath).To(Equal("foo/bar/thing/maven-metadata.xml"))
+			})
+		})
 	})
 })

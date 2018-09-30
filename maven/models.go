@@ -108,6 +108,10 @@ func (a *Artifact) findPropertyValue(property string) string {
 	}
 	return ""
 }
+func (a *Artifact) MetadataPath() string {
+	// TODO: return with leading forward slash?
+	return fmt.Sprintf("%s/%s/maven-metadata.xml", strings.Replace(a.GroupID, ".", "/", -1), a.ArtifactID)
+}
 
 func UnmarshalPOM(contents []byte) (*Artifact, error) {
 	pom := &Artifact{}

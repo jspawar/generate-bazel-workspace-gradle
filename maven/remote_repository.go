@@ -21,6 +21,15 @@ func NewRemoteRepository() RemoteRepository {
 
 // TODO: fix assumption of no trailing "/" on repo URL
 func (r *remoteRepository) FetchRemoteArtifact(artifact *Artifact, remoteRepository string) (*Artifact, error) {
+	// get latest version if needed
+	if artifact.Version == "" {
+		latestVersion, err := r.fetchLatestVersion(artifact, remoteRepository)
+		if err != nil {
+			return nil, err
+		}
+		artifact.Version = latestVersion
+	}
+
 	remoteArtifact, err := r.doFetch(artifact, remoteRepository)
 	if err != nil {
 		return nil, err
@@ -102,4 +111,38 @@ func (r *remoteRepository) doInterpolation(artifact *Artifact) error {
 		dep.Version = interpolatedVersion
 	}
 	return nil
+}
+
+func (r *remoteRepository) fetchLatestVersion(artifact *Artifact, remoteRepository string) (string, error) {
+	res, err := http.Get(fmt.Sprintf("%s/%s", remoteRepository, artifact.MetadataPath()))
+	if err != nil {
+		return "", errors.Wrapf(err,
+			"failed to find metadata for POM [%s] in configured search repositories",
+			artifact.GetMavenCoords())
+	}
+	if res.StatusCode != 200 {
+		return "", errors.New(fmt.Sprintf(
+			"failed to find metadata for POM [%s] in configured search repositories",
+			artifact.GetMavenCoords()))
+	}
+	defer res.Body.Close()
+
+	bs, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+	metadata, err := UnmarshalMetadata(bs)
+	if err != nil {
+		return "", err
+	}
+
+	// return most recent "release" version if available, else refer to "latest"
+	if metadata.Release == "" {
+		// return value in "version" if "release" and "latest" aren't available
+		if metadata.Latest == "" {
+			return metadata.Version, nil
+		}
+		return metadata.Latest, nil
+	}
+	return metadata.Release, nil
 }

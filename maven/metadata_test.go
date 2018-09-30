@@ -25,6 +25,7 @@ var _ = Describe("Metadata", func() {
 <metadata xsi:schemaLocation="http://maven.apache.org/METADATA/1.1.0 http://maven.apache.org/xsd/metadata-1.1.0.xsd">
 	<groupId>foo</groupId>
 	<artifactId>bar</artifactId>
+	<version>1.0</version>
 	<versioning>
 		<latest>1.0.2-SNAPSHOT</latest>
 		<release>1.0.1</release>
@@ -41,6 +42,7 @@ var _ = Describe("Metadata", func() {
 				Expect(metadata.ArtifactID).To(Equal("bar"))
 				Expect(metadata.Latest).To(Equal("1.0.2-SNAPSHOT"))
 				Expect(metadata.Release).To(Equal("1.0.1"))
+				Expect(metadata.Version).To(Equal("1.0"))
 			})
 		})
 
