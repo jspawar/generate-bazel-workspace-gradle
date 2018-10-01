@@ -44,8 +44,8 @@ var _ = Describe("DependencyWalker", func() {
 
 	Context("Given a single repository search", func() {
 		BeforeEach(func() {
-			remoteRepository.FetchRemoteArtifactReturnsOnCall(0, pom, nil)
-			remoteRepository.FetchRemoteArtifactReturnsOnCall(1, pom.Dependencies[0], nil)
+			remoteRepository.FetchRemoteModelReturnsOnCall(0, pom, nil)
+			remoteRepository.FetchRemoteModelReturnsOnCall(1, pom.Dependencies[0], nil)
 
 			repositories = []string{"http://localhost:8080/"}
 		})
@@ -74,7 +74,7 @@ var _ = Describe("DependencyWalker", func() {
 
 		Context("where all dependencies are NOT available in the one repository", func() {
 			BeforeEach(func() {
-				remoteRepository.FetchRemoteArtifactReturnsOnCall(0, nil, errors.New("oh no"))
+				remoteRepository.FetchRemoteModelReturnsOnCall(0, nil, errors.New("oh no"))
 
 				pom = &Artifact{
 					GroupID:    "some.fake.org",
@@ -92,8 +92,8 @@ var _ = Describe("DependencyWalker", func() {
 
 		Context("where a dependency is encountered twice", func() {
 			BeforeEach(func() {
-				remoteRepository.FetchRemoteArtifactReturnsOnCall(0, pom, nil)
-				remoteRepository.FetchRemoteArtifactReturnsOnCall(1, pom, nil)
+				remoteRepository.FetchRemoteModelReturnsOnCall(0, pom, nil)
+				remoteRepository.FetchRemoteModelReturnsOnCall(1, pom, nil)
 
 				pom.Dependencies = []*Artifact{
 					{GroupID: pom.GroupID, ArtifactID: pom.ArtifactID, Version: pom.Version},

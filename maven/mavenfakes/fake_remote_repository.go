@@ -8,17 +8,17 @@ import (
 )
 
 type FakeRemoteRepository struct {
-	FetchRemoteArtifactStub        func(artifact *maven.Artifact, remoteRepository string) (*maven.Artifact, error)
-	fetchRemoteArtifactMutex       sync.RWMutex
-	fetchRemoteArtifactArgsForCall []struct {
+	FetchRemoteModelStub        func(artifact *maven.Artifact, remoteRepository string) (*maven.Artifact, error)
+	fetchRemoteModelMutex       sync.RWMutex
+	fetchRemoteModelArgsForCall []struct {
 		artifact         *maven.Artifact
 		remoteRepository string
 	}
-	fetchRemoteArtifactReturns struct {
+	fetchRemoteModelReturns struct {
 		result1 *maven.Artifact
 		result2 error
 	}
-	fetchRemoteArtifactReturnsOnCall map[int]struct {
+	fetchRemoteModelReturnsOnCall map[int]struct {
 		result1 *maven.Artifact
 		result2 error
 	}
@@ -26,53 +26,53 @@ type FakeRemoteRepository struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeRemoteRepository) FetchRemoteArtifact(artifact *maven.Artifact, remoteRepository string) (*maven.Artifact, error) {
-	fake.fetchRemoteArtifactMutex.Lock()
-	ret, specificReturn := fake.fetchRemoteArtifactReturnsOnCall[len(fake.fetchRemoteArtifactArgsForCall)]
-	fake.fetchRemoteArtifactArgsForCall = append(fake.fetchRemoteArtifactArgsForCall, struct {
+func (fake *FakeRemoteRepository) FetchRemoteModel(artifact *maven.Artifact, remoteRepository string) (*maven.Artifact, error) {
+	fake.fetchRemoteModelMutex.Lock()
+	ret, specificReturn := fake.fetchRemoteModelReturnsOnCall[len(fake.fetchRemoteModelArgsForCall)]
+	fake.fetchRemoteModelArgsForCall = append(fake.fetchRemoteModelArgsForCall, struct {
 		artifact         *maven.Artifact
 		remoteRepository string
 	}{artifact, remoteRepository})
-	fake.recordInvocation("FetchRemoteArtifact", []interface{}{artifact, remoteRepository})
-	fake.fetchRemoteArtifactMutex.Unlock()
-	if fake.FetchRemoteArtifactStub != nil {
-		return fake.FetchRemoteArtifactStub(artifact, remoteRepository)
+	fake.recordInvocation("FetchRemoteModel", []interface{}{artifact, remoteRepository})
+	fake.fetchRemoteModelMutex.Unlock()
+	if fake.FetchRemoteModelStub != nil {
+		return fake.FetchRemoteModelStub(artifact, remoteRepository)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.fetchRemoteArtifactReturns.result1, fake.fetchRemoteArtifactReturns.result2
+	return fake.fetchRemoteModelReturns.result1, fake.fetchRemoteModelReturns.result2
 }
 
-func (fake *FakeRemoteRepository) FetchRemoteArtifactCallCount() int {
-	fake.fetchRemoteArtifactMutex.RLock()
-	defer fake.fetchRemoteArtifactMutex.RUnlock()
-	return len(fake.fetchRemoteArtifactArgsForCall)
+func (fake *FakeRemoteRepository) FetchRemoteModelCallCount() int {
+	fake.fetchRemoteModelMutex.RLock()
+	defer fake.fetchRemoteModelMutex.RUnlock()
+	return len(fake.fetchRemoteModelArgsForCall)
 }
 
-func (fake *FakeRemoteRepository) FetchRemoteArtifactArgsForCall(i int) (*maven.Artifact, string) {
-	fake.fetchRemoteArtifactMutex.RLock()
-	defer fake.fetchRemoteArtifactMutex.RUnlock()
-	return fake.fetchRemoteArtifactArgsForCall[i].artifact, fake.fetchRemoteArtifactArgsForCall[i].remoteRepository
+func (fake *FakeRemoteRepository) FetchRemoteModelArgsForCall(i int) (*maven.Artifact, string) {
+	fake.fetchRemoteModelMutex.RLock()
+	defer fake.fetchRemoteModelMutex.RUnlock()
+	return fake.fetchRemoteModelArgsForCall[i].artifact, fake.fetchRemoteModelArgsForCall[i].remoteRepository
 }
 
-func (fake *FakeRemoteRepository) FetchRemoteArtifactReturns(result1 *maven.Artifact, result2 error) {
-	fake.FetchRemoteArtifactStub = nil
-	fake.fetchRemoteArtifactReturns = struct {
+func (fake *FakeRemoteRepository) FetchRemoteModelReturns(result1 *maven.Artifact, result2 error) {
+	fake.FetchRemoteModelStub = nil
+	fake.fetchRemoteModelReturns = struct {
 		result1 *maven.Artifact
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeRemoteRepository) FetchRemoteArtifactReturnsOnCall(i int, result1 *maven.Artifact, result2 error) {
-	fake.FetchRemoteArtifactStub = nil
-	if fake.fetchRemoteArtifactReturnsOnCall == nil {
-		fake.fetchRemoteArtifactReturnsOnCall = make(map[int]struct {
+func (fake *FakeRemoteRepository) FetchRemoteModelReturnsOnCall(i int, result1 *maven.Artifact, result2 error) {
+	fake.FetchRemoteModelStub = nil
+	if fake.fetchRemoteModelReturnsOnCall == nil {
+		fake.fetchRemoteModelReturnsOnCall = make(map[int]struct {
 			result1 *maven.Artifact
 			result2 error
 		})
 	}
-	fake.fetchRemoteArtifactReturnsOnCall[i] = struct {
+	fake.fetchRemoteModelReturnsOnCall[i] = struct {
 		result1 *maven.Artifact
 		result2 error
 	}{result1, result2}
@@ -81,8 +81,8 @@ func (fake *FakeRemoteRepository) FetchRemoteArtifactReturnsOnCall(i int, result
 func (fake *FakeRemoteRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.fetchRemoteArtifactMutex.RLock()
-	defer fake.fetchRemoteArtifactMutex.RUnlock()
+	fake.fetchRemoteModelMutex.RLock()
+	defer fake.fetchRemoteModelMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

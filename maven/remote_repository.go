@@ -10,7 +10,7 @@ import (
 
 //go:generate counterfeiter . RemoteRepository
 type RemoteRepository interface {
-	FetchRemoteArtifact(artifact *Artifact, remoteRepository string) (*Artifact, error)
+	FetchRemoteModel(artifact *Artifact, remoteRepository string) (*Artifact, error)
 }
 
 type remoteRepository struct{}
@@ -20,7 +20,7 @@ func NewRemoteRepository() RemoteRepository {
 }
 
 // TODO: fix assumption of no trailing "/" on repo URL
-func (r *remoteRepository) FetchRemoteArtifact(artifact *Artifact, remoteRepository string) (*Artifact, error) {
+func (r *remoteRepository) FetchRemoteModel(artifact *Artifact, remoteRepository string) (*Artifact, error) {
 	// get latest version if needed
 	if artifact.Version == "" {
 		latestVersion, err := r.fetchLatestVersion(artifact, remoteRepository)
@@ -40,7 +40,7 @@ func (r *remoteRepository) FetchRemoteArtifact(artifact *Artifact, remoteReposit
 
 	// parent resolution
 	if remoteArtifact.Parent != nil {
-		remoteParent, err := r.FetchRemoteArtifact(remoteArtifact.Parent, remoteRepository)
+		remoteParent, err := r.FetchRemoteModel(remoteArtifact.Parent, remoteRepository)
 		if err != nil {
 			return nil, err
 		}

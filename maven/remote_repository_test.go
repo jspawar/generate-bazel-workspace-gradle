@@ -28,7 +28,7 @@ var _ = Describe("RemoteRepository", func() {
 	JustBeforeEach(func() {
 		mockServer = initMockServer(mockResponses, mockMetadata...)
 
-		remoteArtifact, err = repo.FetchRemoteArtifact(toLookup, mockServer.URL)
+		remoteArtifact, err = repo.FetchRemoteModel(toLookup, mockServer.URL)
 	})
 
 	AfterEach(func() {
