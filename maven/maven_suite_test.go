@@ -30,8 +30,9 @@ func initMockServer(mocks []maven.Artifact, metadata ...maven.Metadata) *httptes
 
 		// serve all input mock responses
 		for _, a := range mocks {
-			p := a.PathToPOM()
-			if "/"+p == r.URL.Path {
+			pomPath := a.PathToPOM()
+			sha1Path := a.PathToJarSHA1()
+			if "/"+pomPath == r.URL.Path {
 				// serialize POM object and return
 				bs, err := xml.Marshal(a)
 				if err != nil {
@@ -42,6 +43,13 @@ func initMockServer(mocks []maven.Artifact, metadata ...maven.Metadata) *httptes
 					w.WriteHeader(500)
 				}
 				w.Header().Add("Content-Type", "text/xml")
+				return
+			} else if "/"+sha1Path == r.URL.Path {
+				if _, err := w.Write([]byte(a.SHA)); err != nil {
+					w.WriteHeader(500)
+					return
+				}
+				w.Header().Add("Content-Type", "text/plain")
 				return
 			}
 		}

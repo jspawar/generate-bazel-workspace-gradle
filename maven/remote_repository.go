@@ -62,7 +62,24 @@ func (r *remoteRepository) FetchRemoteModel(artifact *Artifact, remoteRepository
 }
 
 func (r *remoteRepository) CheckRemoteJAR(artifact *Artifact, remoteRepository string) (string, error) {
-	return "", nil
+	res, err := http.Get(fmt.Sprintf("%s/%s", remoteRepository, artifact.PathToJarSHA1()))
+	if err != nil {
+		return "", errors.Wrapf(err,
+			"failed to find JAR [%s] in configured search repositories",
+			artifact.GetMavenCoords())
+	}
+	if res.StatusCode != 200 {
+		return "", errors.New(fmt.Sprintf(
+			"failed to find JAR [%s] in configured search repositories",
+			artifact.GetMavenCoords()))
+	}
+	defer res.Body.Close()
+
+	bs, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(bs), nil
 }
 
 func (r *remoteRepository) doFetch(artifact *Artifact, remoteRepository string) (*Artifact, error) {

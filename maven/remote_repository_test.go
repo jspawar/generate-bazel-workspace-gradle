@@ -420,7 +420,7 @@ var _ = Describe("RemoteRepository", func() {
 			})
 		})
 
-		PContext("to check Maven JAR for", func() {
+		Context("to check Maven JAR for", func() {
 			var (
 				sha1 string
 			)
@@ -436,7 +436,6 @@ var _ = Describe("RemoteRepository", func() {
 						ArtifactID: "bar",
 						Version:    "1",
 					}
-					mockResponses[0].SHA = "some-sha1"
 				})
 
 				It("should return a meaningful error", func() {
@@ -446,6 +445,10 @@ var _ = Describe("RemoteRepository", func() {
 			})
 
 			Context("for an artifact that is present in one of the desired repositories", func() {
+				BeforeEach(func() {
+					mockResponses[0].SHA = "some-sha1"
+				})
+
 				It("should check for existence of JAR without error", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(sha1).To(Equal("some-sha1"))
