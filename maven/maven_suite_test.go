@@ -30,7 +30,7 @@ func initMockServer(mocks []maven.Artifact, metadata ...maven.Metadata) *httptes
 
 		// serve all input mock responses
 		for _, a := range mocks {
-			p := a.SearchPath()
+			p := a.PathToPOM()
 			if "/"+p == r.URL.Path {
 				// serialize POM object and return
 				bs, err := xml.Marshal(a)

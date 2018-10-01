@@ -22,6 +22,20 @@ type FakeRemoteRepository struct {
 		result1 *maven.Artifact
 		result2 error
 	}
+	CheckRemoteJARStub        func(artifact *maven.Artifact, remoteRepository string) (string, error)
+	checkRemoteJARMutex       sync.RWMutex
+	checkRemoteJARArgsForCall []struct {
+		artifact         *maven.Artifact
+		remoteRepository string
+	}
+	checkRemoteJARReturns struct {
+		result1 string
+		result2 error
+	}
+	checkRemoteJARReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -78,11 +92,65 @@ func (fake *FakeRemoteRepository) FetchRemoteModelReturnsOnCall(i int, result1 *
 	}{result1, result2}
 }
 
+func (fake *FakeRemoteRepository) CheckRemoteJAR(artifact *maven.Artifact, remoteRepository string) (string, error) {
+	fake.checkRemoteJARMutex.Lock()
+	ret, specificReturn := fake.checkRemoteJARReturnsOnCall[len(fake.checkRemoteJARArgsForCall)]
+	fake.checkRemoteJARArgsForCall = append(fake.checkRemoteJARArgsForCall, struct {
+		artifact         *maven.Artifact
+		remoteRepository string
+	}{artifact, remoteRepository})
+	fake.recordInvocation("CheckRemoteJAR", []interface{}{artifact, remoteRepository})
+	fake.checkRemoteJARMutex.Unlock()
+	if fake.CheckRemoteJARStub != nil {
+		return fake.CheckRemoteJARStub(artifact, remoteRepository)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.checkRemoteJARReturns.result1, fake.checkRemoteJARReturns.result2
+}
+
+func (fake *FakeRemoteRepository) CheckRemoteJARCallCount() int {
+	fake.checkRemoteJARMutex.RLock()
+	defer fake.checkRemoteJARMutex.RUnlock()
+	return len(fake.checkRemoteJARArgsForCall)
+}
+
+func (fake *FakeRemoteRepository) CheckRemoteJARArgsForCall(i int) (*maven.Artifact, string) {
+	fake.checkRemoteJARMutex.RLock()
+	defer fake.checkRemoteJARMutex.RUnlock()
+	return fake.checkRemoteJARArgsForCall[i].artifact, fake.checkRemoteJARArgsForCall[i].remoteRepository
+}
+
+func (fake *FakeRemoteRepository) CheckRemoteJARReturns(result1 string, result2 error) {
+	fake.CheckRemoteJARStub = nil
+	fake.checkRemoteJARReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRemoteRepository) CheckRemoteJARReturnsOnCall(i int, result1 string, result2 error) {
+	fake.CheckRemoteJARStub = nil
+	if fake.checkRemoteJARReturnsOnCall == nil {
+		fake.checkRemoteJARReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.checkRemoteJARReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRemoteRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.fetchRemoteModelMutex.RLock()
 	defer fake.fetchRemoteModelMutex.RUnlock()
+	fake.checkRemoteJARMutex.RLock()
+	defer fake.checkRemoteJARMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

@@ -59,9 +59,14 @@ func (a *Artifact) IsValid() bool {
 	return a.GroupID != "" && a.ArtifactID != "" && a.Version != ""
 }
 
-func (a *Artifact) SearchPath() string {
+func (a *Artifact) PathToPOM() string {
 	// TODO: return with leading forward slash?
 	return fmt.Sprintf("%s/%s/%s/%s-%s.pom",
+		strings.Replace(a.GroupID, ".", "/", -1), a.ArtifactID, a.Version, a.ArtifactID, a.Version)
+}
+
+func (a *Artifact) PathToJarSHA1() string {
+	return fmt.Sprintf("%s/%s/%s/%s-%s.jar.sha1",
 		strings.Replace(a.GroupID, ".", "/", -1), a.ArtifactID, a.Version, a.ArtifactID, a.Version)
 }
 

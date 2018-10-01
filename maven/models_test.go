@@ -122,13 +122,13 @@ var _ = Describe("Models", func() {
 	})
 
 	Context("Given a POM struct", func() {
-		Context("to construct a search path for", func() {
+		Context("to construct a POM path for", func() {
 			var (
 				searchPath string
 			)
 
 			JustBeforeEach(func() {
-				searchPath = pom.SearchPath()
+				searchPath = pom.PathToPOM()
 			})
 
 			Context("with valid artifact definition", func() {
@@ -277,6 +277,29 @@ var _ = Describe("Models", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(metadataPath).To(Equal("foo/bar/thing/maven-metadata.xml"))
+			})
+		})
+
+		Context("to construct a JAR SHA1 checksum path for", func() {
+			var pathToSHA1 string
+
+			JustBeforeEach(func() {
+				pathToSHA1 = pom.PathToJarSHA1()
+			})
+
+			Context("with valid artifact definition", func() {
+				BeforeEach(func() {
+					pom = &Artifact{
+						GroupID:    "some.fake.org",
+						ArtifactID: "some-fake-artifact",
+						Version:    "0.0.0",
+						SHA:        "some-sha1",
+					}
+				})
+
+				It("should return a valid path to the model's SHA1 for its JAR", func() {
+					Expect(pathToSHA1).To(Equal("some/fake/org/some-fake-artifact/0.0.0/some-fake-artifact-0.0.0.jar.sha1"))
+				})
 			})
 		})
 	})

@@ -11,6 +11,7 @@ import (
 //go:generate counterfeiter . RemoteRepository
 type RemoteRepository interface {
 	FetchRemoteModel(artifact *Artifact, remoteRepository string) (*Artifact, error)
+	CheckRemoteJAR(artifact *Artifact, remoteRepository string) (string, error)
 }
 
 type remoteRepository struct{}
@@ -60,8 +61,12 @@ func (r *remoteRepository) FetchRemoteModel(artifact *Artifact, remoteRepository
 	return remoteArtifact, nil
 }
 
+func (r *remoteRepository) CheckRemoteJAR(artifact *Artifact, remoteRepository string) (string, error) {
+	return "", nil
+}
+
 func (r *remoteRepository) doFetch(artifact *Artifact, remoteRepository string) (*Artifact, error) {
-	res, err := http.Get(fmt.Sprintf("%s/%s", remoteRepository, artifact.SearchPath()))
+	res, err := http.Get(fmt.Sprintf("%s/%s", remoteRepository, artifact.PathToPOM()))
 	if err != nil {
 		return nil, errors.Wrapf(err,
 			"failed to find POM [%s] in configured search repositories",
