@@ -284,7 +284,7 @@ var _ = Describe("RemoteRepository", func() {
 					})
 				})
 
-				PContext("that depends on the value of another property", func() {
+				Context("that depends on the value of another property", func() {
 					BeforeEach(func() {
 						mockResponses[0].Dependencies = []*Artifact{{
 							GroupID:    "foo",
@@ -293,13 +293,11 @@ var _ = Describe("RemoteRepository", func() {
 						}}
 						mockResponses[0].Properties.Values = append(mockResponses[0].Properties.Values, Property{
 							XMLName: xml.Name{Local: "maven.property"},
-							Value:   "another.property",
+							Value:   "${another.property}",
 						}, Property{
 							XMLName: xml.Name{Local: "another.property"},
 							Value:   "15",
 						})
-
-						mockResponses = append(mockResponses, *mockResponses[0].Parent)
 					})
 
 					It("should return expected artifact, with Maven properties, without error", func() {

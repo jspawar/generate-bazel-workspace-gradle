@@ -171,7 +171,7 @@ var _ = Describe("Models", func() {
 		})
 
 		Context("to interpolate properties for", func() {
-			Context("from parent", func() {
+			Context("properties coming from parent", func() {
 				JustBeforeEach(func() {
 					pom.InterpolateFromParent()
 				})
@@ -209,7 +209,7 @@ var _ = Describe("Models", func() {
 				})
 			})
 
-			Context("from properties", func() {
+			Context("properties coming from itself", func() {
 				var (
 					interpolated string
 				)
@@ -228,6 +228,27 @@ var _ = Describe("Models", func() {
 								{XMLName: xml.Name{Local: "expected.property"}, Value: "6.7"},
 							}},
 						}
+					})
+
+					It("should interpolate correctly", func() {
+						Expect(err).ToNot(HaveOccurred())
+						Expect(interpolated).To(Equal("6.7"))
+					})
+				})
+
+				Context("and the expected property depends on another property", func() {
+					BeforeEach(func() {
+						pom = &Artifact{
+							GroupID:    "foo",
+							ArtifactID: "bar",
+							Version:    "${expected.property}",
+							Properties: Properties{Values: []Property{
+								{XMLName: xml.Name{Local: "expected.property"}, Value: "${another.property}"},
+								{XMLName: xml.Name{Local: "another.property"}, Value: "6.7"},
+							}},
+						}
+
+						pom.InterpolatePropertiesFromProperties()
 					})
 
 					It("should interpolate correctly", func() {

@@ -32,6 +32,7 @@ func (w *DependencyWalker) TraversePOM(pom *Artifact) (*Artifact, error) {
 	// initialize cache
 	pom.Repository = repository
 	deps := make([]*Artifact, 0)
+	// TODO: replace keys for cache with something w/o version like "GetBazelRule" for now
 	w.cache = map[string]string{pom.GetMavenCoords(): repository}
 
 	logger.Debug("Traversing dependencies...")
@@ -54,8 +55,10 @@ func (w *DependencyWalker) TraversePOM(pom *Artifact) (*Artifact, error) {
 
 func (w *DependencyWalker) traverseArtifact(artifact *Artifact) (*Artifact, error) {
 	// check cache to avoid unnecessary traversal
+	// TODO: replace keys for cache with something w/o version like "GetBazelRule" for now
 	if _, isCached := w.cache[artifact.GetMavenCoords()]; isCached {
 		logger.Debugf("Artifact already discovered : %s", artifact.GetMavenCoords())
+		// TODO: sufficient to return nil and not append this to list of dependencies for caller?
 		return nil, nil
 	}
 
@@ -69,6 +72,7 @@ func (w *DependencyWalker) traverseArtifact(artifact *Artifact) (*Artifact, erro
 	artifact = remoteArtifact
 
 	// can safely add this artifact to result slice
+	// TODO: replace keys for cache with something w/o version like "GetBazelRule" for now
 	w.cache[artifact.GetMavenCoords()] = repository
 	artifact.Repository = repository
 	deps := make([]*Artifact, 0)
@@ -78,7 +82,10 @@ func (w *DependencyWalker) traverseArtifact(artifact *Artifact) (*Artifact, erro
 		if err != nil {
 			return nil, err
 		}
-		deps = append(deps, traversedDep)
+		// only append to list of remote dependencies if it hasn't been discovered already
+		if traversedDep != nil {
+			deps = append(deps, traversedDep)
+		}
 	}
 	artifact.Dependencies = deps
 

@@ -1,10 +1,10 @@
 package maven
 
 import (
-	"encoding/xml"
 	"bytes"
-	"golang.org/x/net/html/charset"
+	"encoding/xml"
 	"github.com/pkg/errors"
+	"golang.org/x/net/html/charset"
 )
 
 type Metadata struct {

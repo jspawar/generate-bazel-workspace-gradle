@@ -113,6 +113,16 @@ func (a *Artifact) MetadataPath() string {
 	return fmt.Sprintf("%s/%s/maven-metadata.xml", strings.Replace(a.GroupID, ".", "/", -1), a.ArtifactID)
 }
 
+func (a *Artifact) InterpolatePropertiesFromProperties() {
+	for i, prop := range a.Properties.Values {
+		interpolated, _ := a.InterpolateFromProperties(prop.Value)
+		// TODO: handle error?
+		if interpolated != "" {
+			a.Properties.Values[i].Value = interpolated
+		}
+	}
+}
+
 func UnmarshalPOM(contents []byte) (*Artifact, error) {
 	pom := &Artifact{}
 	reader := bytes.NewReader(contents)

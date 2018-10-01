@@ -21,7 +21,7 @@ var _ = BeforeSuite(func() {
 	format.TruncatedDiff = false
 })
 
-func initMockServer(mocks []maven.Artifact, metadata... maven.Metadata) *httptest.Server {
+func initMockServer(mocks []maven.Artifact, metadata ...maven.Metadata) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if mocks == nil || len(mocks) < 1 {
 			w.WriteHeader(404)

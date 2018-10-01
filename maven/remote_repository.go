@@ -102,6 +102,8 @@ func (r *remoteRepository) doInterpolation(artifact *Artifact) error {
 			artifact.Properties.Values = append(artifact.Properties.Values, artifact.Parent.Properties.Values...)
 		}
 	}
+	// ensure properties themselves have been interpolated
+	artifact.InterpolatePropertiesFromProperties()
 	// interpolate
 	for _, dep := range artifact.Dependencies {
 		interpolatedVersion, err := artifact.InterpolateFromProperties(dep.Version)

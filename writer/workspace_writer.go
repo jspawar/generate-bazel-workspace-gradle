@@ -2,7 +2,9 @@ package writer
 
 import (
 	"fmt"
+	_ "github.com/jspawar/generate-bazel-workspace-gradle/logging"
 	"github.com/jspawar/generate-bazel-workspace-gradle/maven"
+	"go.uber.org/zap"
 	"io"
 )
 
@@ -13,6 +15,8 @@ const excludesDefinition = `excludes = native.existing_rules().keys()`
 const artifactDefinitionHeader = `if "%s" not in excludes:`
 const mavenJarRule = `native.maven_jar`
 const javaLibRule = `native.java_library`
+
+var logger = zap.S()
 
 type WorkspaceWriter struct {
 	out io.Writer
@@ -56,6 +60,8 @@ func (w *WorkspaceWriter) writeWithIndents(n int, bs []byte) {
 }
 
 func (w *WorkspaceWriter) writeMavenJarRule(artifact *maven.Artifact) error {
+	logger.Debugf("Writing Maven JAR rule for artifact: [%s]", artifact.GetMavenCoords())
+
 	w.writeWithIndents(1, []byte(fmt.Sprintf(artifactDefinitionHeader, artifact.GetBazelRule())))
 	w.writeWithIndents(0, []byte("\n"))
 
@@ -84,6 +90,8 @@ func (w *WorkspaceWriter) writeMavenJarRule(artifact *maven.Artifact) error {
 }
 
 func (w *WorkspaceWriter) writeJavaLibraryRule(artifact *maven.Artifact) error {
+	logger.Debugf("Writing Java library rule for artifact: [%s]", artifact.GetMavenCoords())
+
 	w.writeWithIndents(1, []byte(fmt.Sprintf(artifactDefinitionHeader, artifact.GetBazelRule())))
 	w.writeWithIndents(0, []byte("\n"))
 

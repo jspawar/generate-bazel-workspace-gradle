@@ -47,9 +47,6 @@ func artifactRunner(cmd *cobra.Command, args []string) {
 		logger.Errorf("Failed to traverse artifact [%s] : %s", artifactPom.GetMavenCoords(), err)
 		panic(err)
 	}
-	for _, dep := range traversedPom.Dependencies {
-		logger.Debugf("Found dep [%s] in repository [%s]", dep.GetMavenCoords(), dep.Repository)
-	}
 
 	// TODO: write Bazel workspace files
 	currentPath, err := os.Executable()
