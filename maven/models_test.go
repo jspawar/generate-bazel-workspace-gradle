@@ -83,6 +83,7 @@ var _ = Describe("Models", func() {
 								<artifactId>junit-jupiter-engine</artifactId>
 								<version>5.2.0</version>
 								<scope>test</scope>
+								<optional>true</optional>
 							</dependency>
 						</dependencies>
 					</project>
@@ -110,11 +111,13 @@ var _ = Describe("Models", func() {
 						"ArtifactID": Equal("commons-lang3"),
 						"Version":    Equal("3.7"),
 						"Scope":      BeEmpty(),
+						"Optional":   Equal(false),
 					})), PointTo(MatchFields(IgnoreExtras, Fields{
 						"GroupID":    Equal("org.junit.jupiter"),
 						"ArtifactID": Equal("junit-jupiter-engine"),
 						"Version":    Equal("5.2.0"),
 						"Scope":      Equal("test"),
+						"Optional":   Equal(true),
 					}))))
 				})
 			})

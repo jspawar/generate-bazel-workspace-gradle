@@ -20,6 +20,7 @@ type Artifact struct {
 	ArtifactID   string      `xml:"artifactId"`
 	Version      string      `xml:"version"`
 	Scope        string      `xml:"scope,omitempty"`
+	Optional     bool        `xml:"optional"`
 	Repository   string      `xml:"-"`
 	SHA          string      `xml:"-"`
 	Parent       *Artifact   `xml:"parent,omitempty"`
@@ -106,6 +107,7 @@ func (a *Artifact) InterpolateFromProperties(interpolate string) (string, error)
 }
 
 func (a *Artifact) findPropertyValue(property string) string {
+	// TODO: add support for properties of the form "project.*" and "pom.*"
 	for _, prop := range a.Properties.Values {
 		if prop.XMLName.Local == property {
 			return prop.Value

@@ -36,15 +36,17 @@ func (w *DependencyWalker) TraversePOM(pom *Artifact) (*Artifact, error) {
 
 	logger.Debug("Traversing dependencies...")
 	for _, dep := range pom.Dependencies {
-		logger.Debugf("Traversing dependency : %s", dep.GetMavenCoords())
-		traversedDep, err := w.traverseArtifact(dep)
-		if err != nil {
-			return nil, errors.Wrapf(err,
-				"Failed to fetch POM [%s] from configured search repositories",
-				dep.GetMavenCoords())
-		}
-		if traversedDep != nil {
-			deps = append(deps, traversedDep)
+		if !dep.Optional {
+			logger.Debugf("Traversing dependency : %s", dep.GetMavenCoords())
+			traversedDep, err := w.traverseArtifact(dep)
+			if err != nil {
+				return nil, errors.Wrapf(err,
+					"Failed to fetch POM [%s] from configured search repositories",
+					dep.GetMavenCoords())
+			}
+			if traversedDep != nil {
+				deps = append(deps, traversedDep)
+			}
 		}
 	}
 	pom.Dependencies = deps
@@ -75,13 +77,15 @@ func (w *DependencyWalker) traverseArtifact(artifact *Artifact) (*Artifact, erro
 	deps := make([]*Artifact, 0)
 
 	for _, dep := range artifact.Dependencies {
-		traversedDep, err := w.traverseArtifact(dep)
-		if err != nil {
-			return nil, err
-		}
-		// only append to list of remote dependencies if it hasn't been discovered already
-		if traversedDep != nil {
-			deps = append(deps, traversedDep)
+		if !dep.Optional {
+			traversedDep, err := w.traverseArtifact(dep)
+			if err != nil {
+				return nil, err
+			}
+			// only append to list of remote dependencies if it hasn't been discovered already
+			if traversedDep != nil {
+				deps = append(deps, traversedDep)
+			}
 		}
 	}
 	artifact.Dependencies = deps

@@ -114,9 +114,29 @@ var _ = Describe("DependencyWalker", func() {
 				Expect(returnedPom.Dependencies).To(BeEmpty())
 			})
 		})
+
+		Context("where one of the dependencies is marked as optional", func() {
+			BeforeEach(func() {
+				pom.Dependencies[0].Optional = true
+			})
+
+			It("should not include the optional dependencies in result", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(returnedPom).ToNot(BeNil())
+				Expect(returnedPom).To(PointTo(MatchFields(IgnoreExtras, Fields{
+					"GroupID":    Equal("junit"),
+					"ArtifactID": Equal("junit"),
+					"Version":    Equal("4.9"),
+					"Scope":      BeEmpty(),
+					"Repository": Equal(repositories[0]),
+				})))
+				Expect(returnedPom.Dependencies).To(BeEmpty())
+			})
+		})
 	})
 
-	Context("Given a multiple repository search", func() {
+	PContext("Given a multiple repository search", func() {
 		Context("where all dependencies are available in any of the provided repositories", func() {})
 
 		Context("where all dependencies are available in only one of the provided repositories", func() {})
