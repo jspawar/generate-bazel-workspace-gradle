@@ -28,6 +28,7 @@ type Artifact struct {
 	ModelVersion string      `xml:"modelVersion,omitempty"`
 	Properties   Properties  `xml:"properties,omitempty"`
 	Dependencies []*Artifact `xml:"dependencies>dependency,omitempty"`
+	Exclusions   []Artifact  `xml:"exclusions>exclusion,omitempty"`
 }
 
 type Properties struct {

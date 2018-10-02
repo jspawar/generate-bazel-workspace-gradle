@@ -76,6 +76,12 @@ var _ = Describe("Models", func() {
 								<groupId>org.apache.commons</groupId>
 								<artifactId>commons-lang3</artifactId>
 								<version>3.7</version>
+								<exclusions>
+									<exclusion>
+										<groupId>some.exclusion</groupId>
+										<artifactId>thing-to-exclude</artifactId>
+									</exclusion>
+								</exclusions>
 							</dependency>
 							<!-- testing -->
 							<dependency>
@@ -112,6 +118,10 @@ var _ = Describe("Models", func() {
 						"Version":    Equal("3.7"),
 						"Scope":      BeEmpty(),
 						"Optional":   Equal(false),
+						"Exclusions": ConsistOf(MatchFields(IgnoreExtras, Fields{
+							"GroupID":    Equal("some.exclusion"),
+							"ArtifactID": Equal("thing-to-exclude"),
+						})),
 					})), PointTo(MatchFields(IgnoreExtras, Fields{
 						"GroupID":    Equal("org.junit.jupiter"),
 						"ArtifactID": Equal("junit-jupiter-engine"),
