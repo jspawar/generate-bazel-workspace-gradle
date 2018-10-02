@@ -260,6 +260,36 @@ var _ = Describe("Models", func() {
 					})
 				})
 			})
+
+			Context("properties coming from POM model", func() {
+				var (
+					interpolated1 string
+					interpolated2 string
+					interpolated3 string
+				)
+
+				BeforeEach(func() {
+					pom = &Artifact{
+						GroupID:    "com.foo.bar",
+						ArtifactID: "some-artifact",
+						Version:    "1.23",
+					}
+				})
+
+				JustBeforeEach(func() {
+					interpolated1, err = pom.InterpolateFromProperties("${pom.groupId}")
+					interpolated2, err = pom.InterpolateFromProperties("${project.version}")
+					interpolated3, err = pom.InterpolateFromProperties("${groupId}")
+				})
+
+				It("should interpolate correctly", func() {
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(interpolated1).To(Equal(pom.GroupID))
+					Expect(interpolated2).To(Equal(pom.Version))
+					Expect(interpolated3).To(Equal(pom.GroupID))
+				})
+			})
 		})
 
 		Context("to construct a metadata path for", func() {

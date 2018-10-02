@@ -128,6 +128,12 @@ func (r *remoteRepository) doInterpolation(artifact *Artifact) error {
 	artifact.InterpolatePropertiesFromProperties()
 	// interpolate
 	for _, dep := range artifact.Dependencies {
+		interpolatedGroupID, err := artifact.InterpolateFromProperties(dep.GroupID)
+		if err != nil {
+			return err
+		}
+		dep.GroupID = interpolatedGroupID
+
 		interpolatedVersion, err := artifact.InterpolateFromProperties(dep.Version)
 		if err != nil {
 			return err

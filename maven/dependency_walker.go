@@ -36,7 +36,8 @@ func (w *DependencyWalker) TraversePOM(pom *Artifact) (*Artifact, error) {
 
 	logger.Debug("Traversing dependencies...")
 	for _, dep := range pom.Dependencies {
-		if !dep.Optional {
+		// ignore test dependencies for now
+		if !dep.Optional && pom.Scope != "test" {
 			logger.Debugf("Traversing dependency : %s", dep.GetMavenCoords())
 			traversedDep, err := w.traverseArtifact(dep)
 			if err != nil {
@@ -64,7 +65,7 @@ func (w *DependencyWalker) traverseArtifact(artifact *Artifact) (*Artifact, erro
 
 	repository := w.Repositories[0]
 
-	logger.Debugf("Searching for artifact [%s] in repository : %s", artifact.GetMavenCoords(), repository)
+	logger.Infof("Searching for artifact [%s] in repository : %s", artifact.GetMavenCoords(), repository)
 	remoteArtifact, err := w.RemoteRepository.FetchRemoteModel(artifact, repository)
 	if err != nil {
 		return nil, err
@@ -77,7 +78,8 @@ func (w *DependencyWalker) traverseArtifact(artifact *Artifact) (*Artifact, erro
 	deps := make([]*Artifact, 0)
 
 	for _, dep := range artifact.Dependencies {
-		if !dep.Optional {
+		// ignore test dependencies for now
+		if !dep.Optional && artifact.Scope != "test" {
 			traversedDep, err := w.traverseArtifact(dep)
 			if err != nil {
 				return nil, err

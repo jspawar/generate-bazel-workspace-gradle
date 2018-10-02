@@ -12,6 +12,7 @@ import (
 
 var propertyRegex = regexp.MustCompile(`^\${(.*)}$`)
 var artifactRegex = regexp.MustCompile(`^(.+):(.+):(.+)$`)
+var pomPropertiesRegex = regexp.MustCompile(`^(project\.|pom\.)?(groupId|artifactId|version)$`)
 
 // TODO: do any assertions about Maven model version?
 type Artifact struct {
@@ -107,7 +108,11 @@ func (a *Artifact) InterpolateFromProperties(interpolate string) (string, error)
 }
 
 func (a *Artifact) findPropertyValue(property string) string {
-	// TODO: add support for properties of the form "project.*" and "pom.*"
+	ms := pomPropertiesRegex.FindStringSubmatch(property)
+	if len(ms) > 1 {
+		return a.getPomPropertyValue(ms[2])
+	}
+
 	for _, prop := range a.Properties.Values {
 		if prop.XMLName.Local == property {
 			return prop.Value
@@ -115,6 +120,19 @@ func (a *Artifact) findPropertyValue(property string) string {
 	}
 	return ""
 }
+
+func (a *Artifact) getPomPropertyValue(property string) string {
+	switch property {
+	case "groupId":
+		return a.GroupID
+	case "artifactId":
+		return a.ArtifactID
+	case "version":
+		return a.Version
+	}
+	return ""
+}
+
 func (a *Artifact) MetadataPath() string {
 	// TODO: return with leading forward slash?
 	return fmt.Sprintf("%s/%s/maven-metadata.xml", strings.Replace(a.GroupID, ".", "/", -1), a.ArtifactID)
